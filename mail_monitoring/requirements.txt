@@ -1,0 +1,4 @@
+pdfplumber
+pymongo
+pytesseract
+pdf2image

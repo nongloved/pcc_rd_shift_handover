@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UIH Mail Records — All</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13; --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+    --radius:10px;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:radial-gradient(1200px 600px at 80% -10%,#E0DBD8 0%,transparent 60%),var(--bg);color:var(--txt);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+  .back{font-family:var(--sans);font-size:13px;font-weight:600;color:#3E2723;
+    background:transparent;border:1px solid var(--line2);border-radius:7px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s}
+  .back:hover{background:var(--signal);color:#FAF5F1}
+  header h1{font-size:15px;font-weight:700}
+  header .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
+
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar input{font-family:var(--sans);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);
+    border-radius:7px;color:var(--txt);padding:8px 12px;outline:none;width:300px}
+  .toolbar input:focus{border-color:var(--signal)}
+  .toolbar input::placeholder{color:var(--txt3)}
+  .count-label{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-left:auto}
+  .toolbar select{font-family:var(--sans);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);border-radius:7px;color:var(--txt);padding:8px 10px;outline:none;cursor:pointer}
+  .toolbar select:focus{border-color:var(--signal)}
+  .export-wrap{position:relative;display:inline-block}
+  .export-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;min-width:160px}
+  .export-menu.open{display:block}
+  .export-menu button{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;
+    font-weight:600;padding:9px 14px;border:none;background:transparent;color:#3E2723;cursor:pointer;transition:.13s}
+  .export-menu button:hover{background:var(--bg2)}
+  .export-menu-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--txt3);padding:8px 14px 4px;border-top:1px solid var(--line)}
+  .export-menu-label:first-child{border-top:none;padding-top:9px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:860px}
+  col.c-num     {width:34px}
+  col.c-purpose {width:12%}
+  col.c-area    {width:9%}
+  col.c-start   {width:9%}
+  col.c-end     {width:9%}
+  col.c-down    {width:6%}
+  col.c-circ    {width:13%}
+  col.c-impacted{width:15%}
+  col.c-date    {width:9%}
+  col.c-done    {width:5%}
+  col.c-action  {width:8%}
+  th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;
+    text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);
+    overflow:hidden;text-overflow:ellipsis}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--panel2)}
+  tr.row-today td{background:rgba(164,31,19,.06);border-bottom-color:rgba(164,31,19,.12)}
+  tr.row-today td:first-child{box-shadow:inset 3px 0 0 var(--signal)}
+  tr.row-today:hover td{background:rgba(164,31,19,.12)}
+  .num{font-family:var(--mono);color:var(--txt3)}
+  .timecol{font-family:var(--mono);font-size:11px;color:var(--txt2);white-space:nowrap}
+  .downcol{font-family:var(--mono);font-size:11px;color:#F472B6;white-space:nowrap}
+  .datecol{font-family:var(--mono);font-size:10.5px;color:var(--txt3);white-space:nowrap}
+  .circuit-cell{font-size:11.5px;line-height:1.85;overflow:hidden}
+  .circuit-label{font-family:var(--mono);font-size:10px;color:var(--txt3);letter-spacing:.3px}
+  .circuit-name{color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  tr.circuit-extra td{border-top:1px dashed var(--line);background:var(--panel2)}
+  .imp-loc{font-size:11.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .imp-loc-item{padding:2px 0}
+  .action-cell{display:flex;gap:5px;overflow:visible}
+  .btn-edit{font-family:var(--sans);font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:#3E2723;transition:.13s}
+  .btn-edit:hover:not(:disabled){background:var(--signal);color:#FAF5F1;border-color:var(--signal)}
+  .btn-del{font-family:var(--sans);font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:#3E2723;transition:.13s}
+  .btn-del:hover:not(:disabled){background:var(--bad);color:#fff;border-color:var(--bad)}
+  .btn-edit:disabled,.btn-del:disabled{opacity:.3;cursor:not-allowed}
+  .empty{text-align:center;color:var(--txt3);font-family:var(--mono);font-size:12px;padding:40px}
+  @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  tr.row-entering{animation:row-in .3s ease-out both}
+  .done-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #22c55e;background:transparent;color:#3E2723;cursor:pointer;font-family:var(--mono);white-space:nowrap;transition:.13s}
+  .done-btn:hover{background:#bbf7d0;color:#000;border-color:#22c55e}
+  .done-btn.is-done{background:#14532d22;border-color:#22c55e;color:#3E2723}
+  tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line2);border-radius:var(--radius);width:500px;max-width:95vw;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .modal-head h2{font-size:14px;font-weight:700}
+  .modal-close{background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1}
+  .modal-close:hover{color:var(--txt)}
+  .modal-body{padding:18px;display:flex;flex-direction:column;gap:13px}
+  .modal-body label{font-family:var(--mono);font-size:10px;color:var(--txt3);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:4px}
+  .modal-body input,.modal-body textarea{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;
+    color:var(--txt);font-family:var(--sans);font-size:12.5px;padding:8px 10px;outline:none}
+  .modal-body input:focus,.modal-body textarea:focus{border-color:var(--signal)}
+  .modal-body textarea{resize:vertical;min-height:56px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:9px;padding:13px 18px;border-top:1px solid var(--line)}
+  .btn-cancel{font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:#3E2723}
+  .btn-save{font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;
+    cursor:pointer;border:none;background:var(--signal);color:#FAF5F1}
+  .btn-save:disabled{opacity:.5;cursor:default}
+
+  #capoLoader{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(250,245,241,.88);backdrop-filter:blur(3px);
+    align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  }
+  #capoLoader img{width:130px}
+  #capoLoader p{font-family:var(--mono);font-size:12px;color:var(--txt2);letter-spacing:.5px}
+
+  /* ── Light theme ── */
+  html.light{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13; --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+  }
+  html.light body{background:var(--bg);color:var(--txt)}
+  html.light th{background:var(--bg2)}
+  html.light .modal-overlay{background:rgba(0,0,0,.3)}
+</style>
+</head>
+<body>
+<script>if(localStorage.getItem("nocTheme")==="light")document.documentElement.classList.add("light");</script>
+<div class="wrap">
+  <header>
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="/" class="back">← Back</a>
+      <div>
+        <h1>UIH Mail Records — All</h1>
+        <div class="meta" id="metaLine">Loading…</div>
+      </div>
+    </div>
+    <div class="toolbar" style="margin:0">
+      <input id="search" placeholder="Search purpose, location, time…" oninput="applyFilter()">
+      <select id="doneFilter" onchange="applyFilter()">
+        <option value="all">All</option>
+        <option value="pending">Not Done</option>
+        <option value="done">Done</option>
+      </select>
+      <span class="count-label" id="countLabel"></span>
+      <button class="back" onclick="load()" style="white-space:nowrap">↻ Refresh</button>
+      <div class="export-wrap">
+        <button class="back" onclick="toggleExportMenu()" style="white-space:nowrap">Export ▾</button>
+        <div id="exportMenu" class="export-menu">
+          <div class="export-menu-label">All records</div>
+          <button onclick="exportRecords('json','all')">Export as JSON</button>
+          <button onclick="exportRecords('csv','all')">Export as CSV</button>
+          <div class="export-menu-label">Filtered view</div>
+          <button onclick="exportRecords('json','filtered')">Export as JSON</button>
+          <button onclick="exportRecords('csv','filtered')">Export as CSV</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <colgroup>
+          <col class="c-done"><col class="c-num"><col class="c-purpose"><col class="c-area">
+          <col class="c-impacted"><col class="c-start"><col class="c-end"><col class="c-down">
+          <col class="c-circ"><col class="c-date"><col class="c-action">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Done</th><th>#</th><th>Purpose</th><th>Location</th>
+            <th>Impacted Location</th><th>Start Time</th><th>Completion</th><th>Downtime</th>
+            <th>Circuit</th><th>Received At</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="11" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="capoLoader">
+  <img src="/capoo-tired.gif" alt="Loading…">
+  <p>Loading…</p>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Edit Record</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div><label>Purpose</label><textarea id="e-purpose" rows="2"></textarea></div>
+      <div><label>Working Area (Location)</label><input id="e-area" type="text"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Start Time</label><input id="e-start" type="text" placeholder="e.g. 00:00 THT 22/04/2026"></div>
+        <div><label>Completion Time</label><input id="e-end" type="text" placeholder="e.g. 02:00 THT 22/04/2026"></div>
+      </div>
+      <div><label>Downtime per Circuit</label><input id="e-down" type="text" placeholder="e.g. 02:00 hrs."></div>
+      <div><label>Status</label><input id="e-status" type="text" placeholder="e.g. Pending Calendar Sync"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="btnSave" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var all = [];
+  var currentFiltered = [];
+  var editingId = null;
+
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+  function splitTime(str){
+    if(!str||str==="N/A")return["—","—"];
+    var parts=str.split(/\s*[-–]\s*(?=\d{2}:\d{2})/);
+    if(parts.length===2)return[parts[0].trim(),parts[1].trim()];
+    var mid=str.indexOf(" - ");
+    if(mid!==-1)return[str.slice(0,mid).trim(),str.slice(mid+3).trim()];
+    return[str,"—"];
+  }
+  function formatTHT(str){
+    if(!str||str==="—")return"—";
+    return str.replace(/\s*THT\s*/gi," ").replace(/(\d{2}\/\d{2}\/)20(\d{2})/g,"$1$2").trim();
+  }
+  function formatDowntime(str){
+    if(!str||str==="N/A"||str==="—")return"—";
+    var m=str.match(/(\d+):(\d+)/);
+    if(m)return parseInt(m[1])+" hr(s)";
+    return str;
+  }
+  function extractLocation(name){
+    if(!name)return"—";
+    var idx=name.indexOf(" - ");
+    if(idx===-1)return name.trim();
+    var after=name.slice(idx+3).trim();
+    var paren=after.lastIndexOf(")");
+    if(paren!==-1)return after.slice(0,paren+1).trim();
+    return after.replace(/\s+(Main|Back\s*up|Backup)$/i,"").trim();
+  }
+
+  function formatDate(iso){
+    if(!iso)return"—";
+    // stored as UTC without tz marker — append Z then display in Bangkok
+    var normalized=(/[Z+]/.test(iso.slice(10)))?iso:iso+"Z";
+    var d=new Date(normalized);
+    if(isNaN(d))return iso;
+    return d.toLocaleString("en-GB",{timeZone:"Asia/Bangkok",day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  async function toggleDone(id, btn){
+    var nowDone=!btn.classList.contains("is-done");
+    try{
+      var res=await fetch("/api/uih-record/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      document.querySelectorAll("button[onclick*=\"'"+id+"'\"]").forEach(function(b){
+        if(b.classList.contains("done-btn")){
+          b.classList.toggle("is-done",nowDone);
+          b.textContent=nowDone?"✓ Done":"Done";
+          b.closest("tr").classList.toggle("row-done",nowDone);
+        } else {
+          b.disabled=nowDone;
+        }
+      });
+      var rec=all.find(function(r){return r._id===id;});
+      if(rec)rec.done=nowDone;
+    }catch(e){alert("Failed to update: "+e.message);}
+  }
+
+  var todayStr=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Bangkok"});
+
+  function render(records){
+    var tb=document.getElementById("tbody");
+    document.getElementById("countLabel").textContent=records.length+" / "+all.length+" records";
+    if(!records.length){
+      tb.innerHTML='<tr><td colspan="11" class="empty">No records found.</td></tr>';
+      return;
+    }
+    var rows=[];
+    var rowNum=0;
+    records.forEach(function(r){
+      var st=splitTime(r.start_completion_time||"");
+      var circuits=r.affected_circuits||[];
+      var isDone=!!r.done;
+      var isToday=r.processed_at?new Date((r.processed_at+(/[Z+]/.test(r.processed_at.slice(10))?"":"Z"))).toLocaleDateString("en-CA",{timeZone:"Asia/Bangkok"})===todayStr:false;
+      var sharedLeft=''
+        +'<td>'+esc(r.purpose||"—")+'</td>'
+        +'<td>'+esc(r.working_area||"—")+'</td>';
+      var sharedRight=''
+        +'<td class="timecol">'+esc(formatTHT(st[0]))+'</td>'
+        +'<td class="timecol">'+esc(formatTHT(st[1]))+'</td>'
+        +'<td class="downcol">'+esc(formatDowntime(r.downtime_per_circuit))+'</td>';
+      var dateCell='<td class="datecol">'+esc(formatDate(r.processed_at))+'</td>';
+      var doneCell='<td><button class="done-btn'+(isDone?' is-done':'')+'" onclick="toggleDone(\''+r._id+'\',this)">'+(isDone?'✓ Done':'Done')+'</button></td>';
+      var dis=isDone?' disabled':'';
+      var actions='<td><div class="action-cell">'
+        +'<button class="btn-edit" onclick="openEdit(\''+r._id+'\')"'+dis+'>Edit</button>'
+        // +'<button class="btn-del"  onclick="deleteRecord(\''+r._id+'\', this)"'+dis+'>Del</button>'
+        +'</div></td>';
+      var rowBase=(isToday?' row-today':'')+(isDone?' row-done':'');
+      if(!circuits.length){
+        rowNum++;
+        var delay='style="animation-delay:'+(rowNum*35)+'ms"';
+        rows.push('<tr class="row-entering'+rowBase+'" '+delay+'>'
+          +doneCell
+          +'<td class="num">'+rowNum+'</td>'
+          +sharedLeft+'<td>—</td>'+sharedRight
+          +'<td>—</td>'
+          +dateCell+actions+'</tr>');
+      } else {
+        circuits.forEach(function(c,ci){
+          rowNum++;
+          var delay='style="animation-delay:'+(rowNum*35)+'ms"';
+          var impCell='<td class="imp-loc">'+esc(extractLocation(c.circuit_name))+'</td>';
+          var circuitCell='<td class="circuit-cell">'
+            +'<div><span class="circuit-label">CID</span>&nbsp;'+esc(c.cid)+'</div>'
+            +'<div class="circuit-name">'+esc(c.circuit_name||"—")+'</div>'
+            +'</td>';
+          var trClass='row-entering'+(ci>0?' circuit-extra':'')+rowBase;
+          rows.push('<tr class="'+trClass+'" '+delay+'>'
+            +doneCell
+            +'<td class="num">'+rowNum+'</td>'
+            +sharedLeft+impCell+sharedRight+circuitCell+dateCell+actions+'</tr>');
+        });
+      }
+    });
+    tb.innerHTML=rows.join("");
+  }
+
+  function recordText(r){
+    var parts=[
+      r.filename,r.purpose,r.working_area,r.start_completion_time,
+      r.downtime_per_circuit,r.status,r.processed_at
+    ];
+    (r.affected_circuits||[]).forEach(function(c){
+      parts.push(c.sid,c.cid,c.circuit_name,extractLocation(c.circuit_name));
+    });
+    return parts.filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function applyFilter(){
+    var q=document.getElementById("search").value.toLowerCase().trim();
+    var doneVal=document.getElementById("doneFilter").value;
+    var filtered=all.filter(function(r){
+      if(doneVal==="done"&&!r.done)return false;
+      if(doneVal==="pending"&&r.done)return false;
+      if(!q)return true;
+      return recordText(r).indexOf(q)>=0;
+    });
+    currentFiltered=filtered;
+    render(filtered);
+  }
+
+  /* ---- edit modal ---- */
+  function openEdit(id){
+    var r=all.find(function(x){return x._id===id;});
+    if(!r)return;
+    editingId=id;
+    var st=splitTime(r.start_completion_time||"");
+    document.getElementById("e-purpose").value=r.purpose||"";
+    document.getElementById("e-area").value=r.working_area||"";
+    document.getElementById("e-start").value=st[0]==="—"?"":st[0];
+    document.getElementById("e-end").value=st[1]==="—"?"":st[1];
+    document.getElementById("e-down").value=r.downtime_per_circuit||"";
+    document.getElementById("e-status").value=r.status||"";
+    document.getElementById("modalOverlay").classList.add("open");
+  }
+  function closeModal(){
+    editingId=null;
+    document.getElementById("modalOverlay").classList.remove("open");
+  }
+  async function saveEdit(){
+    if(!editingId)return;
+    var btn=document.getElementById("btnSave");
+    btn.disabled=true; btn.textContent="Saving…";
+    var start=document.getElementById("e-start").value.trim();
+    var end=document.getElementById("e-end").value.trim();
+    var payload={
+      purpose:document.getElementById("e-purpose").value.trim()||null,
+      working_area:document.getElementById("e-area").value.trim()||null,
+      start_completion_time:(start&&end)?start+" - "+end:(start||end||null),
+      downtime_per_circuit:document.getElementById("e-down").value.trim()||null,
+      status:document.getElementById("e-status").value.trim()||null,
+    };
+    try{
+      var res=await fetch("/api/uih-record/"+editingId,{
+        method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)
+      });
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      var r=all.find(function(x){return x._id===editingId;});
+      if(r){
+        if(payload.purpose)r.purpose=payload.purpose;
+        if(payload.working_area)r.working_area=payload.working_area;
+        if(payload.start_completion_time)r.start_completion_time=payload.start_completion_time;
+        if(payload.downtime_per_circuit)r.downtime_per_circuit=payload.downtime_per_circuit;
+        if(payload.status)r.status=payload.status;
+      }
+      closeModal();
+      applyFilter();
+    }catch(e){
+      alert("Save failed: "+e.message);
+    }finally{
+      btn.disabled=false; btn.textContent="Save";
+    }
+  }
+  async function deleteRecord(id, btn){
+    if(!confirm("Delete this record?"))return;
+    btn.disabled=true;
+    try{
+      var res=await fetch("/api/uih-record/"+id,{method:"DELETE"});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      all=all.filter(function(x){return x._id!==id;});
+      applyFilter();
+    }catch(e){
+      alert("Delete failed: "+e.message);
+      btn.disabled=false;
+    }
+  }
+
+  document.getElementById("modalOverlay").addEventListener("click",function(e){
+    if(e.target===this)closeModal();
+  });
+
+  /* ---- export ---- */
+  function toggleExportMenu(){
+    document.getElementById("exportMenu").classList.toggle("open");
+  }
+  document.addEventListener("click",function(e){
+    var wrap=document.querySelector(".export-wrap");
+    if(wrap&&!wrap.contains(e.target))document.getElementById("exportMenu").classList.remove("open");
+  });
+  function csvEscape(v){
+    var s=String(v==null?"":v);
+    if(/[",\n]/.test(s))return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  function toCSV(records){
+    var headers=["Purpose","Working Area","Start Time","Completion Time","Downtime","Status","Circuits","Received At","Done"];
+    var lines=[headers.join(",")];
+    records.forEach(function(r){
+      var circuits=(r.affected_circuits||[]).map(function(c){return (c.cid||"")+" "+(c.circuit_name||"");}).join("; ");
+      var st=splitTime(r.start_completion_time||"");
+      var row=[r.purpose,r.working_area,st[0],st[1],r.downtime_per_circuit,r.status,circuits,r.processed_at,r.done?"Yes":"No"];
+      lines.push(row.map(csvEscape).join(","));
+    });
+    return lines.join("\r\n");
+  }
+  function downloadBlob(content,filename,mime){
+    var blob=new Blob([content],{type:mime});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
+  function exportRecords(format,scope){
+    var records=scope==="filtered"?currentFiltered:all;
+    if(!records.length){alert("No records to export.");return;}
+    document.getElementById("exportMenu").classList.remove("open");
+    var stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+    var tag=scope==="filtered"?"uih-records-filtered-":"uih-records-";
+    if(format==="json"){
+      downloadBlob(JSON.stringify(records,null,2),tag+stamp+".json","application/json");
+    } else {
+      downloadBlob(toCSV(records),tag+stamp+".csv","text/csv;charset=utf-8;");
+    }
+  }
+
+  /* ---- load ---- */
+  async function load(){
+    document.getElementById("capoLoader").style.display="flex";
+    var delay=new Promise(function(r){setTimeout(r,1000);});
+    try{
+      var res=await fetch("/api/uih-all");
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      all=await res.json();
+      document.getElementById("metaLine").textContent=
+        "Last loaded: "+new Date().toLocaleTimeString("en-GB")+" · "+all.length+" total records";
+      await delay;
+      applyFilter();
+    }catch(e){
+      await delay;
+      document.getElementById("tbody").innerHTML=
+        '<tr><td colspan="11" class="empty" style="color:var(--bad)">Cannot reach UIH API: '+esc(e.message)+'</td></tr>';
+      document.getElementById("metaLine").textContent="Error loading data";
+    }
+    document.getElementById("capoLoader").style.display="none";
+  }
+
+  load();
+  window.load=load;
+  window.applyFilter=applyFilter;
+  window.closeModal=closeModal;
+  window.deleteRecord=deleteRecord;
+  window.openEdit=openEdit;
+  window.saveEdit=saveEdit;
+  window.toggleDone=toggleDone;
+  window.toggleExportMenu=toggleExportMenu;
+  window.exportRecords=exportRecords;
+})();
+</script>
+</body>
+</html>

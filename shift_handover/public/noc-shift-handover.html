@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOC Shift Handover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13;
+    --day:#A07230; --day-dim:#F5ECD8;   /* sun  */
+    --night:#292F36; --night-dim:#E0DBD8; /* moon */
+    --p1:#C83030; --p2:#C86820; --p3:#A07230; --p4:#7A7060;
+    --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+    --shift-day:#F5E283; --shift-night:#3B5183;
+    --radius:10px;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans); background:
+      radial-gradient(1200px 600px at 80% -10%, #E0DBD8 0%, transparent 60%),
+      var(--bg);
+    color:var(--txt); min-height:100vh; font-size:14px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:18px 20px 60px}
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;
+    padding:16px 18px;background:linear-gradient(180deg,var(--panel),var(--bg2));
+    border:1px solid var(--line);border-radius:var(--radius);
+  }
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .logo{
+    width:40px;height:40px;border-radius:9px;flex:none;display:grid;place-items:center;
+    background:#B1CCC8;overflow:hidden;
+    border:1px solid var(--line2);box-shadow:0 0 0 1px #0006 inset;
+  }
+  .logo img{width:100%;height:100%;object-fit:cover}
+  .brand h1{font-size:16px;font-weight:700;margin:0;letter-spacing:.2px}
+  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--txt3);letter-spacing:.5px}
+  .clock{font-family:var(--mono);text-align:right}
+  .clock .t{font-size:22px;font-weight:600;letter-spacing:1px}
+  .clock .d{font-size:11px;color:var(--txt2);letter-spacing:.4px}
+
+  /* ---------- SHIFT BAR (signature) ---------- */
+  .shiftbar{
+    margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;
+  }
+  .toggle{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:12px;padding:6px}
+  .toggle button{
+    font-family:var(--sans);font-size:13px;font-weight:600;color:var(--txt2);
+    background:transparent;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;transition:.18s;white-space:nowrap;
+  }
+  .toggle button .ic{font-size:15px}
+  .toggle button:hover{color:var(--txt)}
+  .toggle button.active[data-shift="day"]{background:#FFF2BA;color:var(--day);box-shadow:inset 0 0 0 1px #6b531f}
+  .toggle button.active[data-shift="night"]{background:#D2E8FF;color:var(--night);box-shadow:inset 0 0 0 1px #292F36}
+
+  .relay{
+    flex:1;min-width:300px;display:flex;align-items:center;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;
+  }
+  .relay .seg{display:flex;flex-direction:column;line-height:1.25}
+  .relay .seg .lab{font-size:10px;letter-spacing:1px;color:var(--txt3);font-family:var(--mono);text-transform:uppercase}
+  .relay .seg .who{font-weight:600;font-size:13px}
+  .relay .arrow{flex:1;height:2px;position:relative;background:
+    repeating-linear-gradient(90deg,var(--line2) 0 8px,transparent 8px 14px)}
+  .relay .arrow::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left-color:var(--line2)}
+  .ackbtn{
+    font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer;
+    border:1px solid #31465A;color:#31465A;background:#D9F0FF;
+    border-radius:9px;padding:9px 16px;white-space:nowrap;transition:.18s;
+  }
+  .ackbtn:hover{background:#31465A;color:#D9F0FF}
+  .ackbtn.done{border-color:#31465A;color:#D9F0FF;background:#31465A;cursor:default}
+
+  /* ---------- KPI ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 14px;position:relative;overflow:hidden}
+  .kpi .n{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1}
+  .kpi .l{font-size:11px;color:var(--txt2);margin-top:6px}
+  .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .kpi.k-open .bar{background:var(--signal)}
+  .kpi.k-crit .bar{background:var(--p1)} .kpi.k-crit .n{color:var(--p1)}
+  .kpi.k-sla .bar{background:var(--warn)} .kpi.k-sla .n{color:var(--warn)}
+  .kpi.k-pm .bar{background:var(--ok)}
+  .kpi.k-shift .bar{background:var(--shift-night)}
+  html.light .kpi.k-shift .bar{background:var(--shift-day)}
+
+  /* ---------- GRID ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
+  .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .card > .head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .card > .head .ttl{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px}
+  .card > .head .ttl .dot{width:8px;height:8px;border-radius:50%}
+  .card > .head .count{font-family:var(--mono);font-size:11px;color:var(--txt2);
+    border:1px solid var(--line2);border-radius:20px;padding:2px 9px}
+  .card .body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  .addbtn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--signal);
+    background:transparent;border:1px dashed var(--line2);border-radius:8px;
+    padding:8px;cursor:pointer;transition:.15s}
+  .addbtn:hover{border-color:var(--signal);background:#0c2336}
+
+  /* ---------- TICKET ROW ---------- */
+  .ticket{border:1px solid var(--line);border-radius:9px;background:var(--panel2);
+    padding:11px 12px;position:relative;display:flex;flex-direction:column;gap:7px}
+  .ticket .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.4px;
+    border-radius:5px;padding:2px 7px;white-space:nowrap}
+  .pri-P1{background:#fde8ea;color:var(--p1);box-shadow:inset 0 0 0 1px #f8b4bb}
+  .pri-P2{background:#feebd8;color:var(--p2);box-shadow:inset 0 0 0 1px #f8c89a}
+  .pri-P3{background:#fef9d8;color:var(--p3);box-shadow:inset 0 0 0 1px #e8d060}
+  .pri-P4{background:#e8eef5;color:#5b7290;box-shadow:inset 0 0 0 1px #5B88B2}
+  .typ{background:#ddf0fc;color:#122C4F;box-shadow:inset 0 0 0 1px #90d4f4}
+  .tid{font-family:var(--mono);font-size:12px;color:var(--txt2)}
+  .ticket .title{font-weight:600;font-size:13.5px;cursor:text}
+  .ticket .meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11.5px;color:var(--txt2)}
+  .ticket .meta b{color:var(--txt);font-weight:500}
+  .ticket .meta .mono{font-family:var(--mono)}
+  .ticket .act{font-size:12px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px;cursor:text}
+  .ticket .act b{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+  .sla{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;
+    display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px}
+  .sla.ok{background:#d1fae5;color:#3D7A5C}
+  .sla.warn{background:#fef3c7;color:#B8860B}
+  .sla.bad{background:#fee2e2;color:#800000;animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.5}}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .chip{font-family:var(--sans);font-size:11px;color:var(--txt2);background:var(--bg2);
+    border:1px solid var(--line2);border-radius:6px;padding:4px 9px;cursor:pointer;transition:.13s}
+  .chip:hover{color:var(--txt);border-color:var(--signal)}
+  .chip.del:hover{color:var(--bad);border-color:var(--bad)}
+  .statetag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.4px}
+  .st-new{background:#ddf0fc;color:#122C4F}
+  .st-prog{background:#ede9fe;color:#6B5C9E}
+  .st-hold{background:#fef3c7;color:#B8860B}
+
+  /* ---------- PM CHECKLIST ---------- */
+  .pm{display:flex;align-items:flex-start;gap:11px;border:1px solid var(--line);
+    border-radius:9px;background:var(--panel2);padding:10px 12px}
+  .pm .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line2);
+    flex:none;margin-top:1px;cursor:pointer;display:grid;place-items:center;transition:.15s;color:transparent;font-weight:700}
+  .pm.done .box{background:var(--ok);border-color:var(--ok);color:#06131f}
+  .pm.done .ptitle{text-decoration:line-through;color:var(--txt3)}
+  .pm .info{flex:1;min-width:0}
+  .pm .ptitle{font-weight:600;font-size:13px}
+  .pm .pmeta{font-size:11.5px;color:var(--txt2);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 12px}
+  .pm .pmeta .mono{font-family:var(--mono)}
+  .pm .x{color:var(--txt3);cursor:pointer;font-size:15px;line-height:1;padding:2px}
+  .pm .x:hover{color:var(--bad)}
+
+  /* ---------- COORD ---------- */
+  .coord{border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:11px 12px;display:flex;flex-direction:column;gap:7px}
+  .coord .ch{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .coord .window{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--night);
+    background:var(--night-dim);border-radius:6px;padding:2px 9px}
+  .coord .ctitle{font-weight:600;font-size:13.5px}
+  .coord .cmeta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--txt2)}
+  .coord .cmeta b{color:var(--txt);font-weight:500}
+  .coord .cmeta .mono{font-family:var(--mono)}
+  .coord .team{display:inline-flex;align-items:center;gap:5px}
+  .coord .team::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--night)}
+
+  /* ---------- NOTES ---------- */
+  textarea.note{width:100%;min-height:96px;resize:vertical;background:var(--bg2);
+    border:1px solid var(--line);border-radius:9px;color:var(--txt);font-family:var(--sans);
+    font-size:13px;line-height:1.6;padding:11px 12px;outline:none}
+  textarea.note:focus{border-color:var(--signal)}
+  .notehint{font-size:11px;color:var(--txt3);margin-top:6px;font-family:var(--mono)}
+
+  /* ---------- ADD FORM ---------- */
+  .form{border:1px solid var(--line2);border-radius:9px;background:var(--bg2);padding:11px;display:none;flex-direction:column;gap:8px}
+  .form.open{display:flex}
+  .form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .form input,.form select{width:100%;background:var(--panel);border:1px solid var(--line2);
+    border-radius:7px;color:var(--txt);font-family:var(--sans);font-size:12.5px;padding:8px 10px;outline:none}
+  .form input:focus,.form select:focus{border-color:var(--signal)}
+  .form input::placeholder{color:var(--txt3)}
+  .form .frow{display:flex;gap:8px;justify-content:flex-end}
+  .btn-sm{font-family:var(--sans);font-size:12px;font-weight:600;border-radius:7px;padding:7px 14px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--txt2)}
+  .btn-sm.primary{background:var(--signal);color:#06131f;border-color:var(--signal)}
+  .btn-sm:hover{color:var(--txt)} .btn-sm.primary:hover{color:#06131f;filter:brightness(1.08)}
+  #moreRecordsBtn{background:#D2E8FF;border-color:#8399B9;color:#292F36}
+  #moreRecordsBtn:hover{filter:brightness(0.95);color:#292F36}
+  html.light #moreRecordsBtn{background:#FFF2BA;border-color:#A07230}
+  #moreTicketsBtn{background:#D2E8FF;border-color:#8399B9;color:#292F36}
+  #moreTicketsBtn:hover{filter:brightness(0.95);color:#292F36}
+  html.light #moreTicketsBtn{background:#FFF2BA;border-color:#A07230}
+
+  .empty{text-align:center;color:var(--txt3);font-size:12.5px;padding:18px 0;font-family:var(--mono)}
+  .foot{margin-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    color:var(--txt3);font-size:11px;font-family:var(--mono)}
+  .foot button{font-family:var(--mono);font-size:11px;color:var(--txt3);background:none;border:1px solid var(--line);border-radius:7px;padding:6px 12px;cursor:pointer}
+  .foot button:hover{color:var(--bad);border-color:var(--bad)}
+
+  /* ---------- UIH DAILY TABLE ---------- */
+  .uih-body-scroll{max-height:520px;overflow-x:auto;overflow-y:auto;scrollbar-gutter:stable;border-radius:0 0 var(--radius) var(--radius)}
+  .uih-table thead th{position:sticky;top:0;z-index:1}
+  .uih-body-scroll::-webkit-scrollbar{width:5px;height:5px}
+  .uih-body-scroll::-webkit-scrollbar-track{background:var(--bg2)}
+  .uih-body-scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+
+  .uih-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:860px}
+  .uih-table col.c-num{width:32px}
+  .uih-table col.c-purpose{width:17%}
+  .uih-table col.c-area{width:11%}
+  .uih-table col.c-impacted{width:18%}
+  .uih-table col.c-start{width:11%}
+  .uih-table col.c-end{width:11%}
+  .uih-table col.c-down{width:7%}
+  .uih-table col.c-circ{width:6%}
+  .uih-table col.c-done{width:6%}
+  .uih-table th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  .uih-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
+  .uih-table tr:last-child td{border-bottom:none}
+  .uih-table tr:hover td{background:var(--panel2)}
+  .uih-table .num{font-family:var(--mono);color:var(--txt3)}
+  .uih-table .purpose{font-size:11.5px}
+  .uih-table .location{font-size:11.5px}
+  .uih-table .timecol{font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)}
+  .uih-table .downcol{font-family:var(--mono);font-size:11px;color:#F472B6;white-space:nowrap}
+  .circ-count{font-family:var(--mono);font-size:11px;background:var(--bg2);border:1px solid var(--line2);border-radius:4px;padding:1px 7px;color:var(--txt2)}
+  .done-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #22c55e;background:transparent;color:#22c55e;cursor:pointer;font-family:var(--mono);white-space:nowrap;transition:.13s}
+  .done-btn:hover{background:#bbf7d0;color:#000;border-color:#22c55e}
+  .done-btn.is-done{background:#14532d22;border-color:#22c55e;color:#22c55e}
+  .uih-table tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
+  @keyframes row-out{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(40px)}}
+  .uih-table tr.row-hiding td{animation:row-out .35s ease-out forwards;pointer-events:none}
+  @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  .uih-table tr.row-entering{animation:row-in .3s ease-out both}
+  .all-th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
+  #ticketsCard td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
+  #ticketsCard tr:last-child td{border-bottom:none}
+  #ticketsCard tr:hover td{background:var(--panel2)}
+  #ticketsCard tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
+  #ticketsCard tr.row-entering{animation:row-in .3s ease-out both}
+
+
+  @media(max-width:920px){
+    .grid{grid-template-columns:1fr}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .kpi.k-shift{grid-column:1/-1}
+  }
+
+  /* ── Light theme (day shift) ── */
+  html.light{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13;
+    --day:#292F36; --day-dim:#E0DBD8;
+    --night:#6B5C9E; --night-dim:#EAE6F8;
+    --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+  }
+  html.light body{background:var(--bg);color:var(--txt)}
+  html.light .logo{border-color:var(--line2)}
+  html.light .toggle button.active[data-shift="day"]{box-shadow:inset 0 0 0 1px #292F36}
+  html.light .toggle button.active[data-shift="night"]{box-shadow:inset 0 0 0 1px #7C3AED}
+  html.light .uih-table th{background:var(--bg2)}
+
+  /* ackbtn */
+  html.light .ackbtn{background:#C7DFA3;border-color:var(--ok);color:var(--ok)}
+  html.light .ackbtn:hover{background:var(--ok);color:#06131f}
+  html.light .ackbtn.done{border-color:var(--ok);color:#06131f;background:var(--ok)}
+  html.light .addbtn:hover{background:#EAF1F6}
+
+  /* ── Loading overlay ── */
+  #capoLoader{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(6,10,18,.65);backdrop-filter:blur(3px);
+    align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  }
+  #capoLoader img{width:130px}
+  #capoLoader p{font-family:var(--mono);font-size:12px;color:#c8d8f0;letter-spacing:.5px}
+  html.light #capoLoader{background:rgba(220,228,240,.72)}
+</style>
+</head>
+<body>
+<div id="capoLoader">
+  <img src="/capoo.gif" alt="Loading…">
+  <p>Loading…</p>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo"><img src="/logo.jpeg" alt="Logo"></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h1>NOC · Shift Handover Dashboard</h1>
+          <span id="shiftLabel" style="font-family:var(--sans);font-size:13px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:.5px;transition:.3s"></span>
+        </div>
+        <div class="sub">REVENUE DEPARTMENT NOC · RD-0033-68 MA 69</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="t" id="clkT">--:--:--</div>
+      <div class="d" id="clkD">—</div>
+    </div>
+  </header>
+
+  <div class="shiftbar">
+    <div class="toggle" id="toggle">
+      <button data-shift="day" class="active"><span class="ic">☀️</span> กะกลางวัน</button>
+      <button data-shift="night"><span class="ic">🌙</span> กะกลางคืน</button>
+    </div>
+    <div class="relay">
+      <div class="seg"><span class="lab">ส่งมอบจาก</span><span class="who" id="relayFrom">กะกลางคืน</span></div>
+      <div class="arrow"></div>
+      <div class="seg"><span class="lab">รับช่วงต่อ</span><span class="who" id="relayTo">กะกลางวัน</span></div>
+      <button class="ackbtn" id="ackBtn">รับมอบงาน</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <!-- TOP GRID: Ticket | UIH Mail (equal) -->
+  <div class="grid">
+    <!-- LEFT: Ticket -->
+    <div class="col">
+      <div class="card">
+        <div class="head">
+          <div class="ttl"><span class="dot" style="background:var(--signal)"></span> Ticket ค้าง ต้องดำเนินการต่อ</div>
+          <span class="count" id="tkCount">0</span>
+        </div>
+        <div class="body" id="tickets"></div>
+        <div class="body" style="padding-top:0">
+          <button class="addbtn" data-add="ticket">+ เพิ่ม Ticket ค้าง</button>
+          <div class="form" id="form-ticket">
+            <div class="grid2">
+              <input id="tk-id" placeholder="Ticket# เช่น INC-25061901">
+              <select id="tk-pri"><option>P1</option><option selected>P2</option><option>P3</option><option>P4</option></select>
+            </div>
+            <input id="tk-title" placeholder="หัวข้อ เช่น Link WAN สาขาเชียงใหม่ขาด">
+            <div class="grid2">
+              <input id="tk-dev" placeholder="Device / IP เช่น RTR-CNX-01">
+              <input id="tk-site" placeholder="Site เช่น ภาค 8 / เชียงใหม่">
+            </div>
+            <input id="tk-act" placeholder="ดำเนินการล่าสุด / สิ่งที่ค้าง">
+            <div class="grid2">
+              <select id="tk-state"><option value="new">New</option><option value="prog" selected>In Progress</option><option value="hold">On Hold</option></select>
+              <input id="tk-sla" type="number" placeholder="SLA เหลือ (นาที)" value="120">
+            </div>
+            <div class="frow">
+              <button class="btn-sm" data-cancel="ticket">ยกเลิก</button>
+              <button class="btn-sm primary" data-save="ticket">บันทึก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: UIH Daily Mail -->
+    <div class="col">
+      <div class="card" id="pmCard">
+        <div class="head">
+          <div class="ttl"><span class="dot" style="background:var(--signal)"></span> ใบแจ้งงาน RD วันนี้</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="count" id="pmCount">0</span>
+            <a href="/records" id="moreRecordsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
+          </div>
+        </div>
+        <div style="padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg2)">
+          <input id="uihSearch" type="text" placeholder="Search…" oninput="filterUIHTable()"
+            style="width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
+                   color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
+        </div>
+        <div class="uih-body-scroll">
+          <table class="uih-table">
+            <colgroup><col class="c-done"><col class="c-num"><col class="c-purpose"><col class="c-area"><col class="c-impacted"><col class="c-start"><col class="c-end"><col class="c-down"><col class="c-circ"></colgroup>
+            <thead>
+              <tr>
+                <th>Done</th><th>#</th><th>Purpose</th><th>Location</th>
+                <th>Impacted Location</th><th>Start Time</th>
+                <th>Completion Time</th>
+                <th>Downtime</th>
+                <th>Cir.</th>
+              </tr>
+            </thead>
+            <tbody id="uihTableBody">
+              <tr><td colspan="9" class="empty" style="padding:24px">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+  <!-- ALL TICKETS CARD -->
+  <div class="card" id="ticketsCard" style="margin-top:18px">
+    <div class="head">
+      <div class="ttl"><span class="dot" style="background:var(--night)"></span> Ticket ทั้งหมด</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="count" id="ticketsCount">0</span>
+        <a href="/tickets" id="moreTicketsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
+        <select id="ticketsDoneFilter" onchange="filterTickets()" style="font-family:var(--mono);font-size:11px;background:var(--bg2);border:1px solid var(--line2);border-radius:5px;color:var(--txt);padding:3px 7px;cursor:pointer;outline:none">
+          <option value="all">All</option>
+          <option value="pending">Not Done</option>
+          <option value="done">Done</option>
+        </select>
+        <button id="refreshTicketsBtn" class="btn-sm" onclick="loadTickets()" style="padding:3px 9px;font-size:11px">↻</button>
+      </div>
+    </div>
+    <div style="padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg2)">
+      <input id="ticketsSearch" type="text" placeholder="Search…" oninput="filterTickets()"
+        style="width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
+               color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
+    </div>
+    <div style="overflow-x:auto;overflow-y:auto;max-height:420px;scrollbar-gutter:stable">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px">
+        <colgroup>
+          <col style="width:5%"><col style="width:30px"><col style="width:10%"><col style="width:22%">
+          <col style="width:14%"><col style="width:10%"><col style="width:20%"><col style="width:11%">
+        </colgroup>
+        <thead><tr>
+          <th class="all-th">Done</th><th class="all-th">#</th><th class="all-th">Ticket No.</th><th class="all-th">Subject</th>
+          <th class="all-th">Location</th><th class="all-th">Room</th><th class="all-th">Note</th><th class="all-th">Due Date</th>
+        </tr></thead>
+        <tbody id="ticketsTableBody">
+          <tr><td colspan="8" class="empty" style="padding:24px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID: Coord | Note -->
+  <div class="grid">
+    <div class="col">
+      <!-- NIGHT: COORD -->
+      <div class="card" id="coordCard" style="display:none">
+        <div class="head">
+          <div class="ttl"><span class="dot" style="background:var(--night)"></span> ตารางประสานงาน · เปลี่ยนอุปกรณ์ / งานกลางคืน</div>
+          <span class="count" id="coordCount">0</span>
+        </div>
+        <div class="body" id="coordList"></div>
+        <div class="body" style="padding-top:0">
+          <button class="addbtn" data-add="coord">+ เพิ่มงานประสานกลางคืน</button>
+          <div class="form" id="form-coord">
+            <input id="co-title" placeholder="งาน เช่น เปลี่ยน Router สาขาขอนแก่น (RMA)">
+            <div class="grid2">
+              <input id="co-dev" placeholder="Device / IP">
+              <input id="co-window" placeholder="Change Window เช่น 00:30-02:00">
+            </div>
+            <div class="grid2">
+              <input id="co-team" placeholder="ทีมที่ประสาน เช่น Vendor / Field HQ">
+              <input id="co-contact" placeholder="ผู้ติดต่อ / เบอร์">
+            </div>
+            <input id="co-rfc" placeholder="RFC# / Ticket# (ถ้ามี)">
+            <div class="frow">
+              <button class="btn-sm" data-cancel="coord">ยกเลิก</button>
+              <button class="btn-sm primary" data-save="coord">บันทึก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <!-- HANDOVER NOTE -->
+      <div class="card">
+        <div class="head">
+          <div class="ttl"><span class="dot" style="background:var(--ok)"></span> บันทึกส่งมอบกะ (Handover Note)</div>
+        </div>
+        <div class="body">
+          <textarea class="note" id="noteBox" placeholder="สรุปสำคัญสำหรับกะถัดไป — เหตุการณ์ระหว่างกะ, Ticket ที่ต้องจับตา, สิ่งที่รอผลจาก Vendor/ISP ..."></textarea>
+          <div class="notehint" id="ackInfo">ยังไม่มีการรับมอบงาน</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>ข้อมูลถูกบันทึกอัตโนมัติบนเครื่องนี้ · แก้หัวข้อ/ดำเนินการล่าสุดได้โดยคลิกที่ข้อความ</span>
+    <button id="resetBtn">ล้างข้อมูลทั้งหมด</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "noc:handover:v1";
+  var shift = "day";
+
+  /* ---------- storage (graceful fallback) ---------- */
+  var mem = null;
+  async function load(){
+    try{ if(window.storage){ var r=await window.storage.get(KEY); return r?JSON.parse(r.value):null; } }catch(e){}
+    return mem;
+  }
+  async function save(){
+    var s = JSON.stringify(state);
+    mem = state;
+    try{ if(window.storage){ await window.storage.set(KEY, s); } }catch(e){}
+  }
+
+  /* ---------- seed data ---------- */
+  function seed(){
+    var now = Date.now();
+    return {
+      ack:{day:null,night:null},
+      notes:{day:"", night:""},
+      tickets:[
+        {id:"INC-25061812",typ:"INC",pri:"P2",title:"Link WAN สาขาเชียงใหม่ Flap เป็นช่วง ๆ",dev:"RTR-CNX-01",site:"ภาค 8 / เชียงใหม่",state:"prog",act:"แจ้ง ISP เปิดเคส TT-88213 รอ ISP ตรวจ Last mile",due:now+38*60000},
+        {id:"INC-25061805",typ:"INC",pri:"P1",title:"Core Switch HQ CPU สูง 92% ต่อเนื่อง",dev:"CSW-HQ-CORE-01",site:"สำนักงานใหญ่",state:"prog",act:"L2 กำลังวิเคราะห์ process / รอ window reboot",due:now+12*60000},
+        {id:"REQ-25061720",typ:"REQ",pri:"P3",title:"ขอเพิ่ม Bandwidth วงจรสาขาภูเก็ต 100→200M",dev:"-",site:"ภาค 9 / ภูเก็ต",state:"hold",act:"รออนุมัติ Supervisor + แจ้ง ISP",due:now+6*3600000},
+        {id:"INC-25061709",typ:"INC",pri:"P3",title:"AP ชั้น 4 อาคาร B ลูกค้าแจ้งสัญญาณอ่อน",dev:"AP-HQ-B4-07",site:"สำนักงานใหญ่",state:"new",act:"ยังไม่เริ่มตรวจสอบ — รอบกะถัดไป",due:now+14*3600000}
+      ],
+      coord:[
+        {id:"co1",title:"เปลี่ยน Router สาขาขอนแก่น (RMA Hardware)",dev:"RTR-KKN-02",window:"00:30-02:00",team:"Vendor",contact:"คุณเอก 081-xxx-xxxx",rfc:"CHG-250619-04"},
+        {id:"co2",title:"Firmware Upgrade Core Switch HQ",dev:"CSW-HQ-CORE-01",window:"02:00-03:30",team:"L3 + Field HQ",contact:"NOC Sup 02-xxx-xxxx",rfc:"CHG-250619-05"},
+        {id:"co3",title:"ISP เข้าตรวจ Last mile วงจรเชียงใหม่",dev:"วงจร CNX-WAN",window:"01:00-04:00",team:"ISP",contact:"NOC ISP 1888",rfc:"TT-88213"}
+      ]
+    };
+  }
+  var state = seed();
+  var uihRecords = [];
+
+  /* ---------- helpers ---------- */
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function splitTime(str){
+    if(!str||str==="N/A")return["—","—"];
+    var parts=str.split(/\s*[-–]\s*(?=\d{2}:\d{2})/);
+    if(parts.length===2)return[parts[0].trim(),parts[1].trim()];
+    var mid=str.indexOf(" - ");
+    if(mid!==-1)return[str.slice(0,mid).trim(),str.slice(mid+3).trim()];
+    return[str,"—"];
+  }
+  function formatTHT(str){
+    if(!str||str==="—")return"—";
+    return str.replace(/\s*THT\s*/gi," ").replace(/(\d{2}\/\d{2}\/)20(\d{2})/g,"$1$2").trim();
+  }
+  function formatDowntime(str){
+    if(!str||str==="N/A"||str==="—")return"—";
+    var m=str.match(/(\d+):(\d+)/);
+    if(m)return parseInt(m[1])+" hr(s)";
+    return str;
+  }
+  function slaInfo(due){
+    var m = Math.round((due-Date.now())/60000);
+    if(m<0) return {cls:"bad",txt:"เกิน SLA "+Math.abs(m)+"m"};
+    if(m<=30) return {cls:"bad",txt:"เหลือ "+m+"m"};
+    if(m<=120) return {cls:"warn",txt:fmt(m)};
+    return {cls:"ok",txt:fmt(m)};
+  }
+  function fmt(m){ if(m>=60){var h=Math.floor(m/60);return "เหลือ "+h+"h"+(m%60?" "+(m%60)+"m":"");} return "เหลือ "+m+"m"; }
+  function stLabel(s){return {new:"New",prog:"In Progress",hold:"On Hold"}[s]||s;}
+
+  /* ---------- render ---------- */
+  function render(){
+    // shift dependent labels
+    document.getElementById("pmCard").style.display    = "";
+    document.getElementById("coordCard").style.display = shift==="night"?"":"none";
+    document.getElementById("relayFrom").textContent = shift==="day"?"กะกลางคืน":"กะเช้า";
+    document.getElementById("relayTo").textContent   = shift==="day"?"กะกลางวัน":"กะกลางคืน";
+    document.querySelectorAll("#toggle button").forEach(function(b){b.classList.toggle("active",b.dataset.shift===shift);});
+
+    renderKPIs(); renderTickets(); renderCoord();
+
+    // note + ack per shift
+    document.getElementById("noteBox").value = state.notes[shift]||"";
+    var ack = state.ack[shift];
+    var btn = document.getElementById("ackBtn");
+    if(ack){ btn.classList.add("done"); btn.textContent="✓ รับมอบแล้ว";
+      document.getElementById("ackInfo").textContent = "รับมอบโดย "+ack.by+" · "+ack.at;
+    } else { btn.classList.remove("done"); btn.textContent="รับมอบงาน";
+      document.getElementById("ackInfo").textContent = "ยังไม่มีการรับมอบงาน";
+    }
+  }
+
+  function renderKPIs(){
+    var open = state.tickets.length;
+    var crit = state.tickets.filter(function(t){return t.pri==="P1"||t.pri==="P2";}).length;
+    var sla  = state.tickets.filter(function(t){var m=(t.due-Date.now())/60000;return m<=30;}).length;
+    var right = shift==="day"
+      ? {n:uihRecords.length, l:"ใบ RD วันนี้", cls:"k-pm"}
+      : {n:state.coord.length, l:"งานประสานกลางคืน", cls:"k-pm"};
+    var data=[
+      {cls:"k-shift",n:(shift==="day"?"☀️":"🌙"),l:(shift==="day"?"กะเช้า 08:00–20:00":"กะกลางคืน 20:00–08:00")},
+      {cls:"k-open",n:open,l:"Ticket ค้างทั้งหมด"},
+      {cls:"k-crit",n:crit,l:"P1 / P2 ต้องจับตา"},
+      {cls:"k-sla",n:sla,l:"SLA ใกล้ครบ / เกิน"},
+      right
+    ];
+    document.getElementById("kpis").innerHTML = data.map(function(k){
+      return '<div class="kpi '+k.cls+'"><div class="bar"></div><div class="n">'+k.n+'</div><div class="l">'+k.l+'</div></div>';
+    }).join("");
+  }
+
+  function renderTickets(){
+    var el=document.getElementById("tickets");
+    document.getElementById("tkCount").textContent=state.tickets.length;
+    if(!state.tickets.length){el.innerHTML='<div class="empty">— ไม่มี Ticket ค้าง —</div>';return;}
+    // sort by priority then sla
+    var order={P1:0,P2:1,P3:2,P4:3};
+    var ts=state.tickets.slice().sort(function(a,b){return (order[a.pri]-order[b.pri])||(a.due-b.due);});
+    el.innerHTML=ts.map(function(t){
+      var s=slaInfo(t.due);
+      return '<div class="ticket" data-id="'+t.id+'">'
+        +'<div class="top">'
+          +'<span class="pill pri-'+t.pri+'">'+t.pri+'</span>'
+          +'<span class="pill typ">'+esc(t.typ)+'</span>'
+          +'<span class="tid">'+esc(t.id)+'</span>'
+          +'<span class="statetag st-'+t.state+'">'+stLabel(t.state)+'</span>'
+          +'<span class="sla '+s.cls+'">⏱ '+s.txt+'</span>'
+        +'</div>'
+        +'<div class="title" data-edit="title">'+esc(t.title)+'</div>'
+        +'<div class="meta"><span>อุปกรณ์ <b class="mono">'+esc(t.dev)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span></div>'
+        +'<div class="act" data-edit="act"><b>ดำเนินการล่าสุด · </b>'+esc(t.act)+'</div>'
+        +'<div class="row-actions">'
+          +'<span class="chip" data-cyc="state">↻ สถานะ</span>'
+          +'<span class="chip del" data-del="ticket">ปิด/ลบ</span>'
+        +'</div>'
+      +'</div>';
+    }).join("");
+  }
+
+  function extractLocation(name){
+    if(!name)return"—";
+    var idx=name.indexOf(" - ");
+    if(idx===-1)return name.trim();
+    var after=name.slice(idx+3).trim();
+    var paren=after.lastIndexOf(")");
+    if(paren!==-1)return after.slice(0,paren+1).trim();
+    return after.replace(/\s+(Main|Back\s*up|Backup)$/i,"").trim();
+  }
+
+  function filterUIHTable(){
+    var q=(document.getElementById("uihSearch")||{value:""}).value.toLowerCase();
+    var filtered=q?uihRecords.filter(function(r){
+      return(r.purpose||"").toLowerCase().indexOf(q)>=0
+        ||(r.working_area||"").toLowerCase().indexOf(q)>=0
+        ||(r.start_completion_time||"").toLowerCase().indexOf(q)>=0;
+    }):uihRecords;
+    renderUIHTable(filtered);
+  }
+
+  function renderUIHTable(records){
+    if(records===undefined)records=uihRecords;
+    var visible=records.filter(function(r){return!r.done;});
+    var tb=document.getElementById("uihTableBody");
+    var total=uihRecords.length;
+    var doneCount=uihRecords.filter(function(r){return r.done;}).length;
+    document.getElementById("pmCount").textContent=visible.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
+    if(!visible.length){
+      tb.innerHTML='<tr><td colspan="9" class="empty" style="padding:24px">— ไม่มีใบแจ้งงาน RD วันนี้ —</td></tr>';
+      return;
+    }
+    tb.innerHTML=visible.map(function(r,i){
+      var st=splitTime(r.start_completion_time||"");
+      var circuits=r.affected_circuits||[];
+      var circ=circuits.length;
+      var locations=circ
+        ?circuits.map(function(c){return'<div>'+esc(extractLocation(c.circuit_name))+'</div>';}).join("")
+        :"—";
+      return '<tr class="row-entering" style="animation-delay:'+(i*40)+'ms">'
+        +'<td><button class="done-btn" onclick="toggleDone(\''+r._id+'\',this)">Done</button></td>'
+        +'<td class="num">'+(i+1)+'</td>'
+        +'<td class="purpose">'+esc(r.purpose||"—")+'</td>'
+        +'<td class="location">'+esc(r.working_area||"—")+'</td>'
+        +'<td style="font-size:11px;line-height:1.7;color:var(--txt2)">'+locations+'</td>'
+        +'<td class="timecol">'+esc(formatTHT(st[0]))+'</td>'
+        +'<td class="timecol">'+esc(formatTHT(st[1]))+'</td>'
+        +'<td class="downcol">'+esc(formatDowntime(r.downtime_per_circuit))+'</td>'
+        +'<td><span class="circ-count">'+circ+'</span></td>'
+        +'</tr>';
+    }).join("");
+  }
+
+  async function toggleDone(id, btn){
+    var nowDone=!btn.classList.contains("is-done");
+    try{
+      var res=await fetch("/api/uih-record/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      var rec=uihRecords.find(function(r){return r._id===id;});
+      if(rec)rec.done=nowDone;
+      if(nowDone){
+        var tr=btn.closest("tr");
+        tr.classList.add("row-hiding");
+        setTimeout(function(){filterUIHTable();},360);
+      } else {
+        filterUIHTable();
+      }
+    }catch(e){alert("Failed to update: "+e.message);}
+  }
+
+  function showLoader(){document.getElementById("capoLoader").style.display="flex";}
+  function hideLoader(){document.getElementById("capoLoader").style.display="none";}
+
+  async function loadUIHDaily(){
+    showLoader();
+    var delay=new Promise(function(r){setTimeout(r,1000);});
+    try{
+      var res=await fetch("/api/uih-daily");
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      uihRecords=await res.json();
+    }catch(e){
+      uihRecords=[];
+      var tb=document.getElementById("uihTableBody");
+      if(tb)tb.innerHTML='<tr><td colspan="9" class="empty" style="padding:24px;color:var(--bad)">ไม่สามารถโหลดข้อมูลจาก UIH API ได้</td></tr>';
+      await delay;
+      hideLoader();
+      return;
+    }
+    await delay;
+    hideLoader();
+    filterUIHTable();
+    renderKPIs();
+  }
+
+  function renderCoord(){
+    var el=document.getElementById("coordList");
+    document.getElementById("coordCount").textContent=state.coord.length;
+    if(!state.coord.length){el.innerHTML='<div class="empty">— ไม่มีงานประสานกลางคืน —</div>';return;}
+    var cs=state.coord.slice().sort(function(a,b){return a.window.localeCompare(b.window);});
+    el.innerHTML=cs.map(function(c){
+      return '<div class="coord" data-id="'+c.id+'">'
+        +'<div class="ch"><span class="window">'+esc(c.window)+'</span><span class="ctitle">'+esc(c.title)+'</span>'
+          +'<span class="x" data-co-del style="margin-left:auto;color:var(--txt3);cursor:pointer;font-size:15px">×</span></div>'
+        +'<div class="cmeta"><span>อุปกรณ์ <b class="mono">'+esc(c.dev)+'</b></span>'
+          +'<span class="team">ทีม <b>'+esc(c.team)+'</b></span>'
+          +'<span>ติดต่อ <b>'+esc(c.contact)+'</b></span>'
+          +(c.rfc?'<span>RFC <b class="mono">'+esc(c.rfc)+'</b></span>':'')+'</div>'
+      +'</div>';
+    }).join("");
+  }
+
+  /* ---------- events ---------- */
+  function applyTheme(s){
+    document.documentElement.classList.toggle("light", s==="day");
+    localStorage.setItem("nocTheme", s==="day"?"light":"dark");
+    var lbl=document.getElementById("shiftLabel");
+    if(s==="day"){
+      lbl.textContent="☀️ กะกลางวัน";
+      lbl.style.background="#FFF2BA";
+      lbl.style.color="var(--day)";
+      lbl.style.boxShadow="inset 0 0 0 1px #292F36";
+    } else {
+      lbl.textContent="🌙 กะกลางคืน";
+      lbl.style.background="#D2E8FF";
+      lbl.style.color="var(--night)";
+      lbl.style.boxShadow="inset 0 0 0 1px #292F36";
+    }
+  }
+  applyTheme(shift);
+
+  document.getElementById("toggle").addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b)return; shift=b.dataset.shift; applyTheme(shift); render();
+  });
+
+  document.getElementById("ackBtn").addEventListener("click",function(){
+    if(state.ack[shift])return;
+    var by=prompt("ชื่อผู้รับมอบงาน (กะ"+(shift==="day"?"เช้า":"กลางคืน")+"):","");
+    if(by===null)return; by=by.trim()||"NOC";
+    var d=new Date();
+    state.ack[shift]={by:by,at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})};
+    save();render();
+    shift=shift==="day"?"night":"day";
+    applyTheme(shift);
+    render();
+  });
+
+  document.getElementById("noteBox").addEventListener("input",function(){
+    state.notes[shift]=this.value; save();
+  });
+
+  // tickets container
+  document.getElementById("tickets").addEventListener("click",function(e){
+    var row=e.target.closest(".ticket"); if(!row)return; var id=row.dataset.id;
+    var t=state.tickets.find(function(x){return x.id===id;}); if(!t)return;
+    if(e.target.dataset.del!=null){ if(confirm("ปิด/ลบ Ticket "+id+" ?")){ state.tickets=state.tickets.filter(function(x){return x.id!==id;}); save();render(); } }
+    else if(e.target.dataset.cyc==="state"){ var seq=["new","prog","hold"]; t.state=seq[(seq.indexOf(t.state)+1)%seq.length]; save();render(); }
+  });
+  // inline edit (title / act)
+  document.getElementById("tickets").addEventListener("dblclick",inlineEdit);
+  document.getElementById("tickets").addEventListener("click",function(e){
+    if(e.target.dataset.edit){ inlineEdit(e); }
+  });
+  function inlineEdit(e){
+    var node=e.target.closest("[data-edit]"); if(!node)return;
+    var row=e.target.closest(".ticket"); var id=row.dataset.id;
+    var t=state.tickets.find(function(x){return x.id===id;}); if(!t)return;
+    var field=node.dataset.edit;
+    var cur = field==="act"? t.act : t.title;
+    var v=prompt(field==="act"?"แก้ไขดำเนินการล่าสุด:":"แก้ไขหัวข้อ:",cur);
+    if(v===null)return; t[field]=v.trim(); save();render();
+  }
+
+  // Coord delete
+  document.getElementById("coordList").addEventListener("click",function(e){
+    if(e.target.dataset.coDel==null)return;
+    var row=e.target.closest(".coord"); var id=row.dataset.id;
+    state.coord=state.coord.filter(function(x){return x.id!==id;}); save();render();
+  });
+
+  // add forms toggle
+  document.querySelectorAll("[data-add]").forEach(function(b){
+    b.addEventListener("click",function(){ document.getElementById("form-"+b.dataset.add).classList.toggle("open"); });
+  });
+  document.querySelectorAll("[data-cancel]").forEach(function(b){
+    b.addEventListener("click",function(){ document.getElementById("form-"+b.dataset.cancel).classList.remove("open"); });
+  });
+  function val(id){var e=document.getElementById(id);return e?e.value.trim():"";}
+  function uid(p){return p+Date.now().toString(36);}
+
+  document.querySelector('[data-save="ticket"]').addEventListener("click",function(){
+    var id=val("tk-id")||("INC-"+Date.now().toString().slice(-8));
+    var mins=parseInt(val("tk-sla"),10); if(isNaN(mins))mins=120;
+    state.tickets.push({id:id,typ:(id.split("-")[0]||"INC"),pri:val("tk-pri"),title:val("tk-title")||"(ไม่มีหัวข้อ)",
+      dev:val("tk-dev")||"-",site:val("tk-site")||"-",state:val("tk-state"),act:val("tk-act")||"—",due:Date.now()+mins*60000});
+    ["tk-id","tk-title","tk-dev","tk-site","tk-act"].forEach(function(i){document.getElementById(i).value="";});
+    document.getElementById("form-ticket").classList.remove("open"); save();render();
+  });
+  document.querySelector('[data-save="coord"]').addEventListener("click",function(){
+    state.coord.push({id:uid("co"),title:val("co-title")||"(งาน)",dev:val("co-dev")||"-",window:val("co-window")||"--:--",
+      team:val("co-team")||"-",contact:val("co-contact")||"-",rfc:val("co-rfc")});
+    ["co-title","co-dev","co-window","co-team","co-contact","co-rfc"].forEach(function(i){document.getElementById(i).value="";});
+    document.getElementById("form-coord").classList.remove("open"); save();render();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click",function(){
+    if(!confirm("ล้างข้อมูลทั้งหมดและกลับเป็นข้อมูลตัวอย่าง?"))return;
+    state=seed(); save(); render();
+  });
+
+  setInterval(loadUIHDaily, 60000);
+
+  /* ---------- clock ---------- */
+  function tick(){
+    var d=new Date();
+    document.getElementById("clkT").textContent=d.toLocaleTimeString("th-TH",{hour12:false});
+    document.getElementById("clkD").textContent=d.toLocaleDateString("th-TH",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  }
+  setInterval(tick,1000); tick();
+  setInterval(renderKPIs,30000); // refresh SLA chips
+
+  /* ---------- tickets CRUD ---------- */
+  var tickets=[];
+
+  function ticketText(t){
+    var parts=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.note,t.due_date,t.detail];
+    return parts.filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function filterTickets(){
+    var q=(document.getElementById("ticketsSearch").value||"").toLowerCase().trim();
+    var dv=document.getElementById("ticketsDoneFilter").value;
+    var filtered=tickets.filter(function(t){
+      if(dv==="done"&&!t.done)return false;
+      if(dv==="pending"&&t.done)return false;
+      if(q&&ticketText(t).indexOf(q)<0)return false;
+      return true;
+    });
+    renderTicketsTable(filtered);
+  }
+
+  function renderTicketsTable(records){
+    var tb=document.getElementById("ticketsTableBody");
+    var total=tickets.length;
+    var doneCount=tickets.filter(function(t){return t.done;}).length;
+    document.getElementById("ticketsCount").textContent=records.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
+    if(!records.length){
+      tb.innerHTML='<tr><td colspan="8" class="empty" style="padding:20px">No tickets.</td></tr>';
+      return;
+    }
+    var rows=records.map(function(t,i){
+      var isDone=!!t.done;
+      var doneBtn='<button class="done-btn'+(isDone?" is-done":"")+'" onclick="ticketToggleDone(\''+t._id+'\',this)">'+(isDone?"✓ Done":"Done")+'</button>';
+      return '<tr class="row-entering'+(isDone?" row-done":"")+'" style="animation-delay:'+(i*35)+'ms">'
+        +'<td>'+doneBtn+'</td>'
+        +'<td style="font-family:var(--mono);color:var(--txt3)">'+(i+1)+'</td>'
+        +'<td class="mono" style="font-family:var(--mono)">'+esc(t.ticket_id!=null?t.ticket_id:"—")+'</td>'
+        +'<td>'+esc(t.subject||"—")+'</td>'
+        +'<td>'+esc(t.location||"—")+'</td>'
+        +'<td>'+esc(t.room||"—")+'</td>'
+        +'<td>'+esc(t.note||"—")+'</td>'
+        +'<td style="font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)">'+esc(t.due_date||"—")+'</td>'
+      +'</tr>';
+    });
+    tb.innerHTML=rows.join("");
+  }
+
+  async function ticketToggleDone(id, btn){
+    var nowDone=!btn.classList.contains("is-done");
+    try{
+      var res=await fetch("/api/uih-ticket/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      var t=tickets.find(function(x){return x._id===id;});
+      if(t)t.done=nowDone;
+      filterTickets();
+    }catch(e){alert("Failed: "+e.message);}
+  }
+
+  async function loadTickets(){
+    try{
+      var res=await fetch("/api/uih-tickets");
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      tickets=await res.json();
+      filterTickets();
+    }catch(e){
+      document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="8" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
+    }
+  }
+
+  /* ---------- init ---------- */
+  (async function(){
+    var saved=await load();
+    if(saved && saved.tickets){ state=saved; if(!state.ack)state.ack={day:null,night:null}; if(!state.notes)state.notes={day:"",night:""}; }
+    render();
+    loadUIHDaily();
+    loadTickets();
+    window.filterUIHTable=filterUIHTable;
+    window.toggleDone=toggleDone;
+    window.filterTickets=filterTickets;
+    window.loadTickets=loadTickets;
+    window.ticketToggleDone=ticketToggleDone;
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tickets — All</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13; --night:#292F36; --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+    --radius:10px;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:radial-gradient(1200px 600px at 80% -10%,#E0DBD8 0%,transparent 60%),var(--bg);color:var(--txt);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
+  .back{font-family:var(--sans);font-size:13px;font-weight:600;color:#3E2723;
+    background:transparent;border:1px solid var(--line2);border-radius:7px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s}
+  .back:hover{background:var(--signal);color:#FAF5F1}
+  header h1{font-size:15px;font-weight:700}
+  header .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
+
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar input{font-family:var(--sans);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);
+    border-radius:7px;color:var(--txt);padding:8px 12px;outline:none;width:300px}
+  .toolbar input:focus{border-color:var(--signal)}
+  .toolbar input::placeholder{color:var(--txt3)}
+  .count-label{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-left:auto}
+  .toolbar select{font-family:var(--sans);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);border-radius:7px;color:var(--txt);padding:8px 10px;outline:none;cursor:pointer}
+  .toolbar select:focus{border-color:var(--signal)}
+  .export-wrap{position:relative;display:inline-block}
+  .export-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;min-width:160px}
+  .export-menu.open{display:block}
+  .export-menu button{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;
+    font-weight:600;padding:9px 14px;border:none;background:transparent;color:#3E2723;cursor:pointer;transition:.13s}
+  .export-menu button:hover{background:var(--bg2)}
+  .export-menu-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--txt3);padding:8px 14px 4px;border-top:1px solid var(--line)}
+  .export-menu-label:first-child{border-top:none;padding-top:9px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px}
+  col.c-done    {width:5%}
+  col.c-num     {width:34px}
+  col.c-ticket  {width:8%}
+  col.c-circuit {width:9%}
+  col.c-subject {width:20%}
+  col.c-location{width:11%}
+  col.c-room    {width:12%}
+  col.c-note    {width:18%}
+  col.c-due     {width:9%}
+  col.c-received{width:9%}
+  th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;
+    text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);
+    overflow:hidden;text-overflow:ellipsis}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--panel2)}
+  tr.row-today td{background:rgba(164,31,19,.06);border-bottom-color:rgba(164,31,19,.12)}
+  tr.row-today td:first-child{box-shadow:inset 3px 0 0 var(--night)}
+  tr.row-today:hover td{background:rgba(164,31,19,.12)}
+  .num{font-family:var(--mono);color:var(--txt3)}
+  .mono{font-family:var(--mono)}
+  .datecol{font-family:var(--mono);font-size:10.5px;color:var(--txt3);white-space:nowrap}
+  .empty{text-align:center;color:var(--txt3);font-family:var(--mono);font-size:12px;padding:40px}
+  @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  tr.row-entering{animation:row-in .3s ease-out both}
+  .done-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #22c55e;background:transparent;color:#3E2723;cursor:pointer;font-family:var(--mono);white-space:nowrap;transition:.13s}
+  .done-btn:hover{background:#bbf7d0;color:#000;border-color:#22c55e}
+  .done-btn.is-done{background:#14532d22;border-color:#22c55e;color:#3E2723}
+  tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
+
+  #capoLoader{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(250,245,241,.88);backdrop-filter:blur(3px);
+    align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  }
+  #capoLoader img{width:130px}
+  #capoLoader p{font-family:var(--mono);font-size:12px;color:var(--txt2);letter-spacing:.5px}
+
+  /* ── Light theme ── */
+  html.light{
+    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
+    --line:#E0DBD8; --line2:#A9A7A7;
+    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
+    --signal:#A41F13; --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+  }
+  html.light body{background:var(--bg);color:var(--txt)}
+  html.light th{background:var(--bg2)}
+</style>
+</head>
+<body>
+<script>if(localStorage.getItem("nocTheme")==="light")document.documentElement.classList.add("light");</script>
+<div class="wrap">
+  <header>
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="/" class="back">← Back</a>
+      <div>
+        <h1>Tickets — All</h1>
+        <div class="meta" id="metaLine">Loading…</div>
+      </div>
+    </div>
+    <div class="toolbar" style="margin:0">
+      <input id="search" placeholder="Search ticket no, subject, location…" oninput="applyFilter()">
+      <select id="doneFilter" onchange="applyFilter()">
+        <option value="all">All</option>
+        <option value="pending">Not Done</option>
+        <option value="done">Done</option>
+      </select>
+      <span class="count-label" id="countLabel"></span>
+      <button class="back" onclick="load()" style="white-space:nowrap">↻ Refresh</button>
+      <div class="export-wrap">
+        <button class="back" onclick="toggleExportMenu()" style="white-space:nowrap">Export ▾</button>
+        <div id="exportMenu" class="export-menu">
+          <div class="export-menu-label">All tickets</div>
+          <button onclick="exportTickets('json','all')">Export as JSON</button>
+          <button onclick="exportTickets('csv','all')">Export as CSV</button>
+          <div class="export-menu-label">Filtered view</div>
+          <button onclick="exportTickets('json','filtered')">Export as JSON</button>
+          <button onclick="exportTickets('csv','filtered')">Export as CSV</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <colgroup>
+          <col class="c-done"><col class="c-num"><col class="c-ticket"><col class="c-circuit">
+          <col class="c-subject"><col class="c-location"><col class="c-room"><col class="c-note">
+          <col class="c-due"><col class="c-received">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Done</th><th>#</th><th>Ticket No.</th><th>SolarWinds No.</th>
+            <th>Subject</th><th>Location</th><th>Room</th><th>Note</th>
+            <th>Due Date</th><th>Received At</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="10" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="capoLoader">
+  <img src="/capoo-tired.gif" alt="Loading…">
+  <p>Loading…</p>
+</div>
+
+<script>
+(function(){
+  var all = [];
+  var currentFiltered = [];
+
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+  function formatDate(iso){
+    if(!iso)return"—";
+    var normalized=(/[Z+]/.test(iso.slice(10)))?iso:iso+"Z";
+    var d=new Date(normalized);
+    if(isNaN(d))return iso;
+    return d.toLocaleString("en-GB",{timeZone:"Asia/Bangkok",day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  async function toggleDone(id, btn){
+    var nowDone=!btn.classList.contains("is-done");
+    try{
+      var res=await fetch("/api/uih-ticket/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      document.querySelectorAll("button[onclick*=\"'"+id+"'\"]").forEach(function(b){
+        b.classList.toggle("is-done",nowDone);
+        b.textContent=nowDone?"✓ Done":"Done";
+        b.closest("tr").classList.toggle("row-done",nowDone);
+      });
+      var t=all.find(function(x){return x._id===id;});
+      if(t)t.done=nowDone;
+    }catch(e){alert("Failed to update: "+e.message);}
+  }
+
+  var todayStr=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Bangkok"});
+
+  function render(records){
+    var tb=document.getElementById("tbody");
+    document.getElementById("countLabel").textContent=records.length+" / "+all.length+" tickets";
+    if(!records.length){
+      tb.innerHTML='<tr><td colspan="10" class="empty">No tickets found.</td></tr>';
+      return;
+    }
+    var rows=records.map(function(t,i){
+      var isDone=!!t.done;
+      var isToday=t.processed_at?new Date((t.processed_at+(/[Z+]/.test(t.processed_at.slice(10))?"":"Z"))).toLocaleDateString("en-CA",{timeZone:"Asia/Bangkok"})===todayStr:false;
+      var doneBtn='<button class="done-btn'+(isDone?' is-done':'')+'" onclick="toggleDone(\''+t._id+'\',this)">'+(isDone?'✓ Done':'Done')+'</button>';
+      var rowBase=(isToday?' row-today':'')+(isDone?' row-done':'');
+      return '<tr class="row-entering'+rowBase+'" style="animation-delay:'+(i*35)+'ms">'
+        +'<td>'+doneBtn+'</td>'
+        +'<td class="num">'+(i+1)+'</td>'
+        +'<td class="mono">'+esc(t.ticket_id!=null?t.ticket_id:"—")+'</td>'
+        +'<td class="mono">'+esc(t.circuit_id||"—")+'</td>'
+        +'<td>'+esc(t.subject||"—")+'</td>'
+        +'<td>'+esc(t.location||"—")+'</td>'
+        +'<td>'+esc(t.room||"—")+'</td>'
+        +'<td>'+esc(t.note||"—")+'</td>'
+        +'<td class="datecol">'+esc(formatDate(t.due_date))+'</td>'
+        +'<td class="datecol">'+esc(formatDate(t.processed_at))+'</td>'
+      +'</tr>';
+    });
+    tb.innerHTML=rows.join("");
+  }
+
+  function ticketText(t){
+    var parts=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.note,t.due_date,t.detail];
+    return parts.filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function applyFilter(){
+    var q=document.getElementById("search").value.toLowerCase().trim();
+    var doneVal=document.getElementById("doneFilter").value;
+    var filtered=all.filter(function(t){
+      if(doneVal==="done"&&!t.done)return false;
+      if(doneVal==="pending"&&t.done)return false;
+      if(!q)return true;
+      return ticketText(t).indexOf(q)>=0;
+    });
+    currentFiltered=filtered;
+    render(filtered);
+  }
+
+  /* ---- export ---- */
+  function toggleExportMenu(){
+    document.getElementById("exportMenu").classList.toggle("open");
+  }
+  document.addEventListener("click",function(e){
+    var wrap=document.querySelector(".export-wrap");
+    if(wrap&&!wrap.contains(e.target))document.getElementById("exportMenu").classList.remove("open");
+  });
+  function csvEscape(v){
+    var s=String(v==null?"":v);
+    if(/[",\n]/.test(s))return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  }
+  function toCSV(records){
+    var headers=["Ticket No.","SolarWinds No.","Subject","Location","Room","Note","Due Date","Received At","Done"];
+    var lines=[headers.join(",")];
+    records.forEach(function(t){
+      var row=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.note,t.due_date,t.processed_at,t.done?"Yes":"No"];
+      lines.push(row.map(csvEscape).join(","));
+    });
+    return lines.join("\r\n");
+  }
+  function downloadBlob(content,filename,mime){
+    var blob=new Blob([content],{type:mime});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
+  function exportTickets(format,scope){
+    var records=scope==="filtered"?currentFiltered:all;
+    if(!records.length){alert("No tickets to export.");return;}
+    document.getElementById("exportMenu").classList.remove("open");
+    var stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+    var tag=scope==="filtered"?"tickets-filtered-":"tickets-";
+    if(format==="json"){
+      downloadBlob(JSON.stringify(records,null,2),tag+stamp+".json","application/json");
+    } else {
+      downloadBlob(toCSV(records),tag+stamp+".csv","text/csv;charset=utf-8;");
+    }
+  }
+
+  /* ---- load ---- */
+  async function load(){
+    document.getElementById("capoLoader").style.display="flex";
+    var delay=new Promise(function(r){setTimeout(r,1000);});
+    try{
+      var res=await fetch("/api/uih-tickets");
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      all=await res.json();
+      document.getElementById("metaLine").textContent=
+        "Last loaded: "+new Date().toLocaleTimeString("en-GB")+" · "+all.length+" total tickets";
+      await delay;
+      applyFilter();
+    }catch(e){
+      await delay;
+      document.getElementById("tbody").innerHTML=
+        '<tr><td colspan="10" class="empty" style="color:var(--bad)">Cannot reach ticket API: '+esc(e.message)+'</td></tr>';
+      document.getElementById("metaLine").textContent="Error loading data";
+    }
+    document.getElementById("capoLoader").style.display="none";
+  }
+
+  load();
+  window.load=load;
+  window.applyFilter=applyFilter;
+  window.toggleDone=toggleDone;
+  window.toggleExportMenu=toggleExportMenu;
+  window.exportTickets=exportTickets;
+})();
+</script>
+</body>
+</html>

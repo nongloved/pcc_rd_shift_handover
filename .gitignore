@@ -1,0 +1,13 @@
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
