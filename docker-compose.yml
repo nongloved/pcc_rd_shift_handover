@@ -29,6 +29,10 @@ services:
       PROCESSED_FOLDER: /app/pdf_processed
     volumes:
       - pccrd_pdf_data:/app/pdf_processed
+    extra_hosts:
+      - "mongodb-primary:10.1.9.176"
+      - "mongodb-secondary:10.1.9.177"
+      - "mongodb-arbiter:10.1.9.178"
     command: ["python", "main.py"]
 
   helpdesk_monitoring:
@@ -43,6 +47,10 @@ services:
       MONGO_HOST: mongodb
       MONGO_PORT: "27018"
       HELPDESK_MONGO_DB: pccrd_helpdesk_db
+    extra_hosts:
+      - "mongodb-primary:10.1.9.176"
+      - "mongodb-secondary:10.1.9.177"
+      - "mongodb-arbiter:10.1.9.178"
     command: ["python", "helpdesk_monitor.py"]
 
   api:
@@ -52,11 +60,16 @@ services:
     restart: unless-stopped
     depends_on:
       - mongodb
+    env_file: .env
     environment:
       MONGO_HOST: mongodb
       MONGO_PORT: "27018"
       MONGO_DB: pccrd_db
       HELPDESK_MONGO_DB: pccrd_helpdesk_db
+    extra_hosts:
+      - "mongodb-primary:10.1.9.176"
+      - "mongodb-secondary:10.1.9.177"
+      - "mongodb-arbiter:10.1.9.178"
     command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
 
   shift_handover:

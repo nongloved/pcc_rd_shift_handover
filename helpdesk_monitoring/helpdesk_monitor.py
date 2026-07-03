@@ -2,7 +2,7 @@ import os
 import re
 import time
 import warnings
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
 import requests
 import urllib3
@@ -14,13 +14,25 @@ HELPDESK_HOST = os.getenv('HELPDESK_HOST', '10.1.18.2')
 HELPDESK_USER = os.getenv('HELPDESK_USER', '')
 HELPDESK_PASS = os.getenv('HELPDESK_PASS', '')
 TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets/"
-TICKET_URL = TICKETS_BASE_URL + "{ticket_id}/"
+GROUP_TICKETS_URL = TICKETS_BASE_URL + "group"
 
-POLL_INTERVAL_SEC = 30 * 60
+POLL_INTERVAL_SEC = 15 * 60
 
 
 def _build_mongo_uri():
     from urllib.parse import quote_plus
+
+    if os.getenv('USE_REMOTE_MONGO', 'false').lower() == 'true':
+        user        = os.getenv('REMOTE_MONGO_USER', '')
+        passwd      = os.getenv('REMOTE_MONGO_PASS', '')
+        hosts       = os.getenv('REMOTE_MONGO_HOSTS', '')
+        replica_set = os.getenv('REMOTE_MONGO_REPLICA_SET', '')
+        auth        = os.getenv('REMOTE_MONGO_AUTH_SOURCE', 'admin')
+        params = f"authSource={auth}"
+        if replica_set:
+            params += f"&replicaSet={replica_set}"
+        return f"mongodb://{quote_plus(user)}:{quote_plus(passwd)}@{hosts}/?{params}"
+
     user   = os.getenv('MONGO_USER', '')
     passwd = os.getenv('MONGO_PASS', '')
     host   = os.getenv('MONGO_HOST', 'localhost')
@@ -39,52 +51,24 @@ db = client[HELPDESK_MONGO_DB]
 tickets_collection = db['tickets']
 
 
-TH_TZ = timezone(timedelta(hours=7))
-
-
-def parse_utc(ts):
-    if not ts:
-        return None
-    try:
-        return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-    except ValueError:
-        return None
-
-
-def is_today_th(*timestamps):
-    """True if any of the given UTC timestamp strings falls on today's date in Thailand time."""
-    today_th = datetime.now(TH_TZ).date()
-    for ts in timestamps:
-        dt = parse_utc(ts)
-        if dt and dt.astimezone(TH_TZ).date() == today_th:
-            return True
-    return False
-
-
 def fetch_group_tickets():
-    resp = requests.get(
-        TICKETS_BASE_URL,
-        params={"username": HELPDESK_USER, "password": HELPDESK_PASS, "list": "group"},
-        verify=False,
-        timeout=15
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def fetch_ticket(ticket_id):
-    url = TICKET_URL.format(ticket_id=ticket_id)
-    resp = requests.get(
-        url,
-        params={"username": HELPDESK_USER, "password": HELPDESK_PASS, "style": "details"},
-        verify=False,
-        timeout=15
-    )
-    if resp.status_code in (404, 400):
-        # 400 covers "deleted or no permission" — treated the same as not-found
-        return None
-    resp.raise_for_status()
-    return resp.json()
+    """Page through the group queue (already full-detail via style=details) until an empty page."""
+    tickets = []
+    page = 1
+    while True:
+        resp = requests.get(
+            GROUP_TICKETS_URL,
+            params={"username": HELPDESK_USER, "password": HELPDESK_PASS, "style": "details", "page": page},
+            verify=False,
+            timeout=15
+        )
+        resp.raise_for_status()
+        batch = resp.json()
+        if not batch:
+            break
+        tickets.extend(batch)
+        page += 1
+    return tickets
 
 
 CIRCUIT_ID_RE = re.compile(r"Circuit ID(?:\s+(Main|Backup))?\s*:\s*(\S+)", re.IGNORECASE)
@@ -106,10 +90,16 @@ def extract_ticket_fields(raw):
     notes = raw.get('notes') or []
     location = raw.get('location') or {}
     detail = raw.get('detail')
+    problemtype = raw.get('problemtype') or {}
+    statustype = raw.get('statustype') or {}
+    prioritytype = raw.get('prioritytype') or {}
     return {
         "ticket_id": raw.get('id'),
         "circuit_id": extract_circuit_id(detail),
         "subject": raw.get('subject'),
+        "request_type": problemtype.get('detailDisplayName'),
+        "status": statustype.get('statusTypeName'),
+        "priority": prioritytype.get('priorityTypeName'),
         "location": location.get('locationName'),
         "room": raw.get('room'),
         "note": notes[0].get('mobileNoteText') if notes else None,
@@ -120,27 +110,21 @@ def extract_ticket_fields(raw):
     }
 
 
+def is_not_resolved(raw):
+    """Exclude tickets whose status is Resolved — every other status is allowed through."""
+    status = (raw.get('statustype') or {}).get('statusTypeName') or ''
+    return status != 'Resolved'
+
+
 def poll_new_tickets():
     group_tickets = fetch_group_tickets()
     new_count = 0
     updated_count = 0
-    skipped_count = 0
 
-    # Pre-filter using the summary's lastUpdated to avoid a detail fetch for old,
-    # untouched tickets — opening a ticket also bumps lastUpdated, so this alone
-    # covers "opened today OR updated today" in practice.
-    todays_summaries = [s for s in group_tickets if is_today_th(s.get('lastUpdated'))]
-    skipped_count = len(group_tickets) - len(todays_summaries)
+    for raw in group_tickets:
+        ticket_id = raw.get('id')
 
-    for summary in todays_summaries:
-        ticket_id = summary.get('id')
-
-        raw = fetch_ticket(ticket_id)
-        if raw is None:
-            continue
-
-        # Authoritative check against the full record's opened/updated dates.
-        if not is_today_th(raw.get('reportDateUtc'), raw.get('lastUpdated')):
+        if not is_not_resolved(raw):
             continue
 
         data = extract_ticket_fields(raw)
@@ -157,7 +141,6 @@ def poll_new_tickets():
             new_count += 1
             print(f"  Saved ticket {ticket_id}: {data['subject']}")
 
-    print(f"  ({skipped_count} not from today, skipped)")
     return new_count, updated_count
 
 

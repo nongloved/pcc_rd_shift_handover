@@ -17,7 +17,6 @@
     --night:#292F36; --night-dim:#E0DBD8; /* moon */
     --p1:#C83030; --p2:#C86820; --p3:#A07230; --p4:#7A7060;
     --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
-    --shift-day:#F5E283; --shift-night:#3B5183;
     --radius:10px;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
     --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
@@ -97,8 +96,7 @@
   .kpi.k-crit .bar{background:var(--p1)} .kpi.k-crit .n{color:var(--p1)}
   .kpi.k-sla .bar{background:var(--warn)} .kpi.k-sla .n{color:var(--warn)}
   .kpi.k-pm .bar{background:var(--ok)}
-  .kpi.k-shift .bar{background:var(--shift-night)}
-  html.light .kpi.k-shift .bar{background:var(--shift-day)}
+  .kpi.k-ma .bar{background:var(--night)}
 
   /* ---------- GRID ---------- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
@@ -122,10 +120,11 @@
   .ticket .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.4px;
     border-radius:5px;padding:2px 7px;white-space:nowrap}
-  .pri-P1{background:#fde8ea;color:var(--p1);box-shadow:inset 0 0 0 1px #f8b4bb}
-  .pri-P2{background:#feebd8;color:var(--p2);box-shadow:inset 0 0 0 1px #f8c89a}
-  .pri-P3{background:#fef9d8;color:var(--p3);box-shadow:inset 0 0 0 1px #e8d060}
-  .pri-P4{background:#e8eef5;color:#5b7290;box-shadow:inset 0 0 0 1px #5B88B2}
+  .pri-Critical{background:#fde8ea;color:var(--p1);box-shadow:inset 0 0 0 1px #f8b4bb}
+  .pri-High{background:#feebd8;color:var(--p2);box-shadow:inset 0 0 0 1px #f8c89a}
+  .pri-Medium{background:#fef9d8;color:var(--p3);box-shadow:inset 0 0 0 1px #e8d060}
+  .pri-Low{background:#e8eef5;color:#5b7290;box-shadow:inset 0 0 0 1px #5B88B2}
+  .pri-Scheduled{background:#ece8f5;color:#6b5b9a;box-shadow:inset 0 0 0 1px #b8a8e0}
   .typ{background:#ddf0fc;color:#122C4F;box-shadow:inset 0 0 0 1px #90d4f4}
   .tid{font-family:var(--mono);font-size:12px;color:var(--txt2)}
   .ticket .title{font-weight:600;font-size:13.5px;cursor:text}
@@ -254,7 +253,6 @@
   @media(max-width:920px){
     .grid{grid-template-columns:1fr}
     .kpis{grid-template-columns:repeat(2,1fr)}
-    .kpi.k-shift{grid-column:1/-1}
   }
 
   /* ── Light theme (day shift) ── */
@@ -345,14 +343,14 @@
           <div class="form" id="form-ticket">
             <div class="grid2">
               <input id="tk-id" placeholder="Ticket# เช่น INC-25061901">
-              <select id="tk-pri"><option>P1</option><option selected>P2</option><option>P3</option><option>P4</option></select>
+              <select id="tk-pri"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option><option>Scheduled</option></select>
             </div>
             <input id="tk-title" placeholder="หัวข้อ เช่น Link WAN สาขาเชียงใหม่ขาด">
             <div class="grid2">
-              <input id="tk-dev" placeholder="Device / IP เช่น RTR-CNX-01">
+              <input id="tk-reqtype" placeholder="Device / IP เช่น RTR-CNX-01">
               <input id="tk-site" placeholder="Site เช่น ภาค 8 / เชียงใหม่">
             </div>
-            <input id="tk-act" placeholder="ดำเนินการล่าสุด / สิ่งที่ค้าง">
+            <input id="tk-note" placeholder="notes: ">
             <div class="grid2">
               <select id="tk-state"><option value="new">New</option><option value="prog" selected>In Progress</option><option value="hold">On Hold</option></select>
               <input id="tk-sla" type="number" placeholder="SLA เหลือ (นาที)" value="120">
@@ -514,12 +512,7 @@
     return {
       ack:{day:null,night:null},
       notes:{day:"", night:""},
-      tickets:[
-        {id:"INC-25061812",typ:"INC",pri:"P2",title:"Link WAN สาขาเชียงใหม่ Flap เป็นช่วง ๆ",dev:"RTR-CNX-01",site:"ภาค 8 / เชียงใหม่",state:"prog",act:"แจ้ง ISP เปิดเคส TT-88213 รอ ISP ตรวจ Last mile",due:now+38*60000},
-        {id:"INC-25061805",typ:"INC",pri:"P1",title:"Core Switch HQ CPU สูง 92% ต่อเนื่อง",dev:"CSW-HQ-CORE-01",site:"สำนักงานใหญ่",state:"prog",act:"L2 กำลังวิเคราะห์ process / รอ window reboot",due:now+12*60000},
-        {id:"REQ-25061720",typ:"REQ",pri:"P3",title:"ขอเพิ่ม Bandwidth วงจรสาขาภูเก็ต 100→200M",dev:"-",site:"ภาค 9 / ภูเก็ต",state:"hold",act:"รออนุมัติ Supervisor + แจ้ง ISP",due:now+6*3600000},
-        {id:"INC-25061709",typ:"INC",pri:"P3",title:"AP ชั้น 4 อาคาร B ลูกค้าแจ้งสัญญาณอ่อน",dev:"AP-HQ-B4-07",site:"สำนักงานใหญ่",state:"new",act:"ยังไม่เริ่มตรวจสอบ — รอบกะถัดไป",due:now+14*3600000}
-      ],
+      tickets:[],
       coord:[
         {id:"co1",title:"เปลี่ยน Router สาขาขอนแก่น (RMA Hardware)",dev:"RTR-KKN-02",window:"00:30-02:00",team:"Vendor",contact:"คุณเอก 081-xxx-xxxx",rfc:"CHG-250619-04"},
         {id:"co2",title:"Firmware Upgrade Core Switch HQ",dev:"CSW-HQ-CORE-01",window:"02:00-03:30",team:"L3 + Field HQ",contact:"NOC Sup 02-xxx-xxxx",rfc:"CHG-250619-05"},
@@ -584,16 +577,17 @@
 
   function renderKPIs(){
     var open = state.tickets.length;
-    var crit = state.tickets.filter(function(t){return t.pri==="P1"||t.pri==="P2";}).length;
+    var crit = state.tickets.filter(function(t){return t.pri==="Critical"||t.pri==="High";}).length;
     var sla  = state.tickets.filter(function(t){var m=(t.due-Date.now())/60000;return m<=30;}).length;
     var right = shift==="day"
-      ? {n:uihRecords.length, l:"ใบ RD วันนี้", cls:"k-pm"}
-      : {n:state.coord.length, l:"งานประสานกลางคืน", cls:"k-pm"};
+      ? {n:uihRecords.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"}
+      : {n:state.coord.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"};
+    var ma = {n:tickets.length, l:"งาน PM ทั้งหมด - MA", cls:"k-ma"};
     var data=[
-      {cls:"k-shift",n:(shift==="day"?"☀️":"🌙"),l:(shift==="day"?"กะเช้า 08:00–20:00":"กะกลางคืน 20:00–08:00")},
       {cls:"k-open",n:open,l:"Ticket ค้างทั้งหมด"},
-      {cls:"k-crit",n:crit,l:"P1 / P2 ต้องจับตา"},
+      {cls:"k-crit",n:crit,l:"Critical / High ต้องจับตา"},
       {cls:"k-sla",n:sla,l:"SLA ใกล้ครบ / เกิน"},
+      ma,
       right
     ];
     document.getElementById("kpis").innerHTML = data.map(function(k){
@@ -606,27 +600,74 @@
     document.getElementById("tkCount").textContent=state.tickets.length;
     if(!state.tickets.length){el.innerHTML='<div class="empty">— ไม่มี Ticket ค้าง —</div>';return;}
     // sort by priority then sla
-    var order={P1:0,P2:1,P3:2,P4:3};
+    var order={Critical:0,High:1,Medium:2,Low:3,Scheduled:4};
     var ts=state.tickets.slice().sort(function(a,b){return (order[a.pri]-order[b.pri])||(a.due-b.due);});
     el.innerHTML=ts.map(function(t){
       var s=slaInfo(t.due);
       return '<div class="ticket" data-id="'+t.id+'">'
         +'<div class="top">'
           +'<span class="pill pri-'+t.pri+'">'+t.pri+'</span>'
-          +'<span class="pill typ">'+esc(t.typ)+'</span>'
+          +'<span class="pill typ">Ticket No.</span>'
           +'<span class="tid">'+esc(t.id)+'</span>'
           +'<span class="statetag st-'+t.state+'">'+stLabel(t.state)+'</span>'
           +'<span class="sla '+s.cls+'">⏱ '+s.txt+'</span>'
         +'</div>'
         +'<div class="title" data-edit="title">'+esc(t.title)+'</div>'
-        +'<div class="meta"><span>อุปกรณ์ <b class="mono">'+esc(t.dev)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span></div>'
-        +'<div class="act" data-edit="act"><b>ดำเนินการล่าสุด · </b>'+esc(t.act)+'</div>'
+        +'<div class="meta"><span>ประเภทงาน <b class="mono">'+esc(t.reqtype)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span></div>'
+        +'<div class="act" data-edit="note"><b>หมายเหตุ · </b>'+esc(t.note)+'</div>'
         +'<div class="row-actions">'
           +'<span class="chip" data-cyc="state">↻ สถานะ</span>'
           +'<span class="chip del" data-del="ticket">ปิด/ลบ</span>'
         +'</div>'
       +'</div>';
     }).join("");
+  }
+
+  /* ---------- live Helpdesk -> pending tickets card ---------- */
+  // one-time cleanup: strip old hardcoded demo tickets from any browser that already
+  // persisted them to storage before this card switched to a live data source
+  var DEMO_TICKET_IDS={"INC-25061812":1,"INC-25061805":1,"REQ-25061720":1,"INC-25061709":1};
+  function mapPriority(p){
+    var m={"Critical":"Critical","Urgent":"Critical","High":"High","Medium":"Medium","Low":"Low","Scheduled":"Scheduled"};
+    return m[p]||"Medium";
+  }
+  function mapStatus(s){
+    var m={"New":"new","Open":"new","Assigned":"prog","In Progress":"prog","Pending":"hold","On Hold":"hold","Hold":"hold"};
+    return m[s]||"prog";
+  }
+  function parseDueDate(str){
+    var d=str?new Date(str):null;
+    return (d&&!isNaN(d.getTime()))?d.getTime():Date.now()+120*60000;
+  }
+  function mapTicketFromHelpdesk(ht){
+    var site=[ht.location,ht.room].filter(Boolean).join(" / ");
+    return {
+      id: ht.ticket_id!=null?String(ht.ticket_id):("HD-"+ht._id),
+      typ:"MA",
+      pri: mapPriority(ht.priority),
+      title: ht.subject||"(ไม่มีหัวข้อ)",
+      reqtype: ht.request_type||"-",
+      site: site||"-",
+      state: mapStatus(ht.status),
+      note: ht.note||"—",
+      due: parseDueDate(ht.due_date),
+      _hd:true
+    };
+  }
+  async function loadPendingTickets(){
+    try{
+      var res=await fetch("/api/uih-tickets");
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      var raw=await res.json();
+      var live=raw.filter(function(t){return t.status!=="Resolved";}).map(mapTicketFromHelpdesk);
+      var liveIds={}; live.forEach(function(t){liveIds[t.id]=true;});
+      // keep manually-added local tickets that aren't sourced from Helpdesk and aren't superseded by a live one
+      var localOnly=state.tickets.filter(function(t){return !t._hd && !liveIds[t.id] && !DEMO_TICKET_IDS[t.id];});
+      state.tickets=live.concat(localOnly);
+      save(); renderTickets(); renderKPIs();
+    }catch(e){
+      console.error("loadPendingTickets failed:",e.message);
+    }
   }
 
   function extractLocation(name){
@@ -795,8 +836,8 @@
     var row=e.target.closest(".ticket"); var id=row.dataset.id;
     var t=state.tickets.find(function(x){return x.id===id;}); if(!t)return;
     var field=node.dataset.edit;
-    var cur = field==="act"? t.act : t.title;
-    var v=prompt(field==="act"?"แก้ไขดำเนินการล่าสุด:":"แก้ไขหัวข้อ:",cur);
+    var cur = field==="note"? t.note : t.title;
+    var v=prompt(field==="note"?"แก้ไขหมายเหตุ:":"แก้ไขหัวข้อ:",cur);
     if(v===null)return; t[field]=v.trim(); save();render();
   }
 
@@ -821,8 +862,8 @@
     var id=val("tk-id")||("INC-"+Date.now().toString().slice(-8));
     var mins=parseInt(val("tk-sla"),10); if(isNaN(mins))mins=120;
     state.tickets.push({id:id,typ:(id.split("-")[0]||"INC"),pri:val("tk-pri"),title:val("tk-title")||"(ไม่มีหัวข้อ)",
-      dev:val("tk-dev")||"-",site:val("tk-site")||"-",state:val("tk-state"),act:val("tk-act")||"—",due:Date.now()+mins*60000});
-    ["tk-id","tk-title","tk-dev","tk-site","tk-act"].forEach(function(i){document.getElementById(i).value="";});
+      reqtype:val("tk-reqtype")||"-",site:val("tk-site")||"-",state:val("tk-state"),note:val("tk-note")||"—",due:Date.now()+mins*60000});
+    ["tk-id","tk-title","tk-reqtype","tk-site","tk-note"].forEach(function(i){document.getElementById(i).value="";});
     document.getElementById("form-ticket").classList.remove("open"); save();render();
   });
   document.querySelector('[data-save="coord"]').addEventListener("click",function(){
@@ -838,6 +879,7 @@
   });
 
   setInterval(loadUIHDaily, 60000);
+  setInterval(loadPendingTickets, 60000);
 
   /* ---------- clock ---------- */
   function tick(){
@@ -909,8 +951,10 @@
     try{
       var res=await fetch("/api/uih-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
-      tickets=await res.json();
+      var all=await res.json();
+      tickets=all.filter(function(t){return t.request_type==="Preventive Maintenance Plan";});
       filterTickets();
+      renderKPIs();
     }catch(e){
       document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="8" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
     }
@@ -923,6 +967,7 @@
     render();
     loadUIHDaily();
     loadTickets();
+    loadPendingTickets();
     window.filterUIHTable=filterUIHTable;
     window.toggleDone=toggleDone;
     window.filterTickets=filterTickets;

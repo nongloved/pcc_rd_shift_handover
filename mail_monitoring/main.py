@@ -21,6 +21,18 @@ IMAP_INBOX_FOLDERS = [f.strip() for f in os.getenv('IMAP_INBOX_FOLDER', 'INBOX-/
 
 def _build_mongo_uri():
     from urllib.parse import quote_plus
+
+    if os.getenv('USE_REMOTE_MONGO', 'false').lower() == 'true':
+        user        = os.getenv('REMOTE_MONGO_USER', '')
+        passwd      = os.getenv('REMOTE_MONGO_PASS', '')
+        hosts       = os.getenv('REMOTE_MONGO_HOSTS', '')
+        replica_set = os.getenv('REMOTE_MONGO_REPLICA_SET', '')
+        auth        = os.getenv('REMOTE_MONGO_AUTH_SOURCE', 'admin')
+        params = f"authSource={auth}"
+        if replica_set:
+            params += f"&replicaSet={replica_set}"
+        return f"mongodb://{quote_plus(user)}:{quote_plus(passwd)}@{hosts}/?{params}"
+
     user   = os.getenv('MONGO_USER', '')
     passwd = os.getenv('MONGO_PASS', '')
     host   = os.getenv('MONGO_HOST', 'localhost')
