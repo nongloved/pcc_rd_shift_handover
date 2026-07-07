@@ -20,9 +20,33 @@
     --radius:10px;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
     --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
+    --glass-bg:rgba(255,255,255,.42);
+    --glass-bg-strong:rgba(255,255,255,.6);
+    --glass-border:rgba(255,255,255,.55);
+    --glass-highlight:rgba(255,255,255,.75);
+    --glass-shadow:rgba(41,47,54,.22);
   }
   *{box-sizing:border-box}
   html,body{margin:0}
+  @media (prefers-reduced-motion:no-preference){
+    button,select,input,textarea,.btn-sm,.chip,.addbtn,.ackbtn,.done-btn,.more,.pm .box,
+    .toggle button,.card,.ticket,.kpi{
+      transition:background-color .15s ease,color .15s ease,border-color .15s ease,
+        box-shadow .18s ease,transform .15s ease,opacity .15s ease;
+    }
+  }
+  @keyframes pop-in{0%{opacity:0;transform:translateY(8px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes fade-in{0%{opacity:0}100%{opacity:1}}
+  @keyframes zoom-in{0%{opacity:0;transform:scale(.82)}100%{opacity:1;transform:scale(1)}}
+  @keyframes slide-in-left{0%{opacity:0;transform:translateX(-16px)}100%{opacity:1;transform:translateX(0)}}
+  @keyframes slide-in-right{0%{opacity:0;transform:translateX(16px)}100%{opacity:1;transform:translateX(0)}}
+  @keyframes bar-grow{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+  @keyframes num-bounce{0%{transform:scale(.7)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
+  header{animation:fade-in .4s ease both}
+  .kpis{animation:pop-in .35s ease both}
+  .card{animation:pop-in .35s ease both}
+  .btn-sm:active,.addbtn:active,.ackbtn:active:not(.done),.chip:active,.done-btn:active,
+  .toggle button:active,.close:active{transform:scale(.94)}
   body{
     font-family:var(--sans); background:
       radial-gradient(1200px 600px at 80% -10%, #E0DBD8 0%, transparent 60%),
@@ -55,14 +79,15 @@
   .shiftbar{
     margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;
   }
-  .toggle{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);
-    border-radius:12px;padding:6px}
+  .toggle{display:flex;gap:4px;background:var(--glass-bg);border:1px solid var(--glass-border);
+    border-radius:999px;padding:4px;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 2px 10px var(--glass-shadow)}
   .toggle button{
-    font-family:var(--sans);font-size:13px;font-weight:600;color:var(--txt2);
-    background:transparent;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;
-    display:flex;align-items:center;gap:8px;transition:.18s;white-space:nowrap;
+    font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--txt2);
+    background:transparent;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:.18s;white-space:nowrap;
   }
-  .toggle button .ic{font-size:15px}
+  .toggle button .ic{font-size:12px}
   .toggle button:hover{color:var(--txt)}
   .toggle button.active[data-shift="day"]{background:#FFF2BA;color:var(--day);box-shadow:inset 0 0 0 1px #6b531f}
   .toggle button.active[data-shift="night"]{background:#D2E8FF;color:var(--night);box-shadow:inset 0 0 0 1px #292F36}
@@ -86,17 +111,24 @@
   .ackbtn.done{border-color:#31465A;color:#D9F0FF;background:#31465A;cursor:default}
 
   /* ---------- KPI ---------- */
-  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  .kpis{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:13px 14px;position:relative;overflow:hidden}
-  .kpi .n{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1}
+  .kpi .n{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;
+    display:inline-block;animation:num-bounce .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:.12s}
   .kpi .l{font-size:11px;color:var(--txt2);margin-top:6px}
-  .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:3px}
-  .kpi.k-open .bar{background:var(--signal)}
-  .kpi.k-crit .bar{background:var(--p1)} .kpi.k-crit .n{color:var(--p1)}
-  .kpi.k-sla .bar{background:var(--warn)} .kpi.k-sla .n{color:var(--warn)}
+  .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:3px;transform-origin:top;animation:bar-grow .35s ease-out both}
   .kpi.k-pm .bar{background:var(--ok)}
   .kpi.k-ma .bar{background:var(--night)}
+  .kpi.k-pri-critical .bar{background:var(--bad)} .kpi.k-pri-critical .n{color:var(--bad)}
+  .kpi.k-pri-high .bar{background:var(--p2)} .kpi.k-pri-high .n{color:var(--p2)}
+  .kpi.k-pri-medium .bar{background:#C9A227} .kpi.k-pri-medium .n{color:#C9A227}
+  .kpi.k-pri-low .bar{background:#3B6E91} .kpi.k-pri-low .n{color:#3B6E91}
+  .kpi.k-pri-scheduled .bar{background:var(--ok)} .kpi.k-pri-scheduled .n{color:var(--ok)}
+  .kpi{animation:zoom-in .3s ease both}
+  .kpi:nth-child(1){animation-delay:.02s} .kpi:nth-child(2){animation-delay:.05s}
+  .kpi:nth-child(3){animation-delay:.08s} .kpi:nth-child(4){animation-delay:.11s}
+  .kpi:nth-child(5){animation-delay:.14s}
 
   /* ---------- GRID ---------- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
@@ -109,15 +141,26 @@
   .card > .head .count{font-family:var(--mono);font-size:11px;color:var(--txt2);
     border:1px solid var(--line2);border-radius:20px;padding:2px 9px}
   .card .body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+  #tickets{max-height:640px;overflow-y:auto;scrollbar-gutter:stable;scroll-behavior:smooth}
+  #tickets::-webkit-scrollbar{width:5px}
+  #tickets::-webkit-scrollbar-track{background:var(--bg2)}
+  #tickets::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
   .addbtn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--signal);
-    background:transparent;border:1px dashed var(--line2);border-radius:8px;
-    padding:8px;cursor:pointer;transition:.15s}
-  .addbtn:hover{border-color:var(--signal);background:#0c2336}
+    background:var(--glass-bg);border:1px dashed var(--line2);border-radius:10px;
+    padding:8px;cursor:pointer;transition:.15s;backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}
+  .addbtn:hover{border-color:var(--signal);background:var(--glass-bg-strong);transform:translateY(-1px)}
 
   /* ---------- TICKET ROW ---------- */
   .ticket{border:1px solid var(--line);border-radius:9px;background:var(--panel2);
-    padding:11px 12px;position:relative;display:flex;flex-direction:column;gap:7px}
+    padding:11px 12px;position:relative;display:flex;flex-direction:column;gap:7px;
+    height:172px;flex-shrink:0;overflow:hidden;cursor:pointer;animation:slide-in-left .32s ease-out both}
+  .ticket:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.09);border-color:var(--line2)}
+  .ticket:nth-child(1){animation-delay:.02s} .ticket:nth-child(2){animation-delay:.04s}
+  .ticket:nth-child(3){animation-delay:.06s} .ticket:nth-child(4){animation-delay:.08s}
+  .ticket:nth-child(5){animation-delay:.10s} .ticket:nth-child(6){animation-delay:.12s}
   .ticket .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .more{color:var(--signal);cursor:pointer;font-weight:600;white-space:nowrap}
+  .more:hover{text-decoration:underline}
   .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.4px;
     border-radius:5px;padding:2px 7px;white-space:nowrap}
   .pri-Critical{background:#fde8ea;color:var(--p1);box-shadow:inset 0 0 0 1px #f8b4bb}
@@ -126,12 +169,13 @@
   .pri-Low{background:#e8eef5;color:#5b7290;box-shadow:inset 0 0 0 1px #5B88B2}
   .pri-Scheduled{background:#ece8f5;color:#6b5b9a;box-shadow:inset 0 0 0 1px #b8a8e0}
   .typ{background:#ddf0fc;color:#122C4F;box-shadow:inset 0 0 0 1px #90d4f4}
+  .upd{background:#fce7f3;color:#9d174d;box-shadow:inset 0 0 0 1px #f9a8d4;font-weight:500;letter-spacing:0}
   .tid{font-family:var(--mono);font-size:12px;color:var(--txt2)}
-  .ticket .title{font-weight:600;font-size:13.5px;cursor:text}
+  .ticket .title{font-weight:600;font-size:13.5px}
   .ticket .meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11.5px;color:var(--txt2)}
   .ticket .meta b{color:var(--txt);font-weight:500}
   .ticket .meta .mono{font-family:var(--mono)}
-  .ticket .act{font-size:12px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px;cursor:text}
+  .ticket .act{font-size:12px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px}
   .ticket .act b{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px}
   .sla{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;
     display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px}
@@ -142,12 +186,8 @@
   .row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
   .chip{font-family:var(--sans);font-size:11px;color:var(--txt2);background:var(--bg2);
     border:1px solid var(--line2);border-radius:6px;padding:4px 9px;cursor:pointer;transition:.13s}
-  .chip:hover{color:var(--txt);border-color:var(--signal)}
+  .chip:hover{color:var(--txt);border-color:var(--signal);transform:translateY(-1px)}
   .chip.del:hover{color:var(--bad);border-color:var(--bad)}
-  .statetag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.4px}
-  .st-new{background:#ddf0fc;color:#122C4F}
-  .st-prog{background:#ede9fe;color:#6B5C9E}
-  .st-hold{background:#fef3c7;color:#B8860B}
 
   /* ---------- PM CHECKLIST ---------- */
   .pm{display:flex;align-items:flex-start;gap:11px;border:1px solid var(--line);
@@ -162,18 +202,6 @@
   .pm .pmeta .mono{font-family:var(--mono)}
   .pm .x{color:var(--txt3);cursor:pointer;font-size:15px;line-height:1;padding:2px}
   .pm .x:hover{color:var(--bad)}
-
-  /* ---------- COORD ---------- */
-  .coord{border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:11px 12px;display:flex;flex-direction:column;gap:7px}
-  .coord .ch{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-  .coord .window{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--night);
-    background:var(--night-dim);border-radius:6px;padding:2px 9px}
-  .coord .ctitle{font-weight:600;font-size:13.5px}
-  .coord .cmeta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--txt2)}
-  .coord .cmeta b{color:var(--txt);font-weight:500}
-  .coord .cmeta .mono{font-family:var(--mono)}
-  .coord .team{display:inline-flex;align-items:center;gap:5px}
-  .coord .team::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--night)}
 
   /* ---------- NOTES ---------- */
   textarea.note{width:100%;min-height:96px;resize:vertical;background:var(--bg2);
@@ -191,15 +219,21 @@
   .form input:focus,.form select:focus{border-color:var(--signal)}
   .form input::placeholder{color:var(--txt3)}
   .form .frow{display:flex;gap:8px;justify-content:flex-end}
-  .btn-sm{font-family:var(--sans);font-size:12px;font-weight:600;border-radius:7px;padding:7px 14px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--txt2)}
-  .btn-sm.primary{background:var(--signal);color:#06131f;border-color:var(--signal)}
-  .btn-sm:hover{color:var(--txt)} .btn-sm.primary:hover{color:#06131f;filter:brightness(1.08)}
-  #moreRecordsBtn{background:#D2E8FF;border-color:#8399B9;color:#292F36}
+  .btn-sm{font-family:var(--sans);font-size:12px;font-weight:600;border-radius:9px;padding:7px 14px;cursor:pointer;
+    border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--txt2);
+    backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight)}
+  .btn-sm.primary{background:var(--signal);color:#06131f;border-color:var(--signal);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+  .btn-sm:hover{color:var(--txt);background:var(--glass-bg-strong)} .btn-sm.primary:hover{color:#06131f;filter:brightness(1.08)}
+  #ackConfirm{background:var(--ok);border-color:var(--ok);color:#06131f;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+  #ackConfirm:hover{color:#06131f;filter:brightness(1.08)}
+  #moreRecordsBtn{background:rgba(210,232,255,.55);border-color:#8399B9;color:#292F36}
   #moreRecordsBtn:hover{filter:brightness(0.95);color:#292F36}
-  html.light #moreRecordsBtn{background:#FFF2BA;border-color:#A07230}
-  #moreTicketsBtn{background:#D2E8FF;border-color:#8399B9;color:#292F36}
+  html.light #moreRecordsBtn{background:rgba(255,242,186,.55);border-color:#A07230}
+  #moreTicketsBtn{background:rgba(210,232,255,.55);border-color:#8399B9;color:#292F36}
   #moreTicketsBtn:hover{filter:brightness(0.95);color:#292F36}
-  html.light #moreTicketsBtn{background:#FFF2BA;border-color:#A07230}
+  html.light #moreTicketsBtn{background:rgba(255,242,186,.55);border-color:#A07230}
 
   .empty{text-align:center;color:var(--txt3);font-size:12.5px;padding:18px 0;font-family:var(--mono)}
   .foot{margin-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
@@ -208,7 +242,7 @@
   .foot button:hover{color:var(--bad);border-color:var(--bad)}
 
   /* ---------- UIH DAILY TABLE ---------- */
-  .uih-body-scroll{max-height:520px;overflow-x:auto;overflow-y:auto;scrollbar-gutter:stable;border-radius:0 0 var(--radius) var(--radius)}
+  .uih-body-scroll{height:279px;overflow-x:auto;overflow-y:auto;scrollbar-gutter:stable;border-radius:0 0 var(--radius) var(--radius);scroll-behavior:smooth}
   .uih-table thead th{position:sticky;top:0;z-index:1}
   .uih-body-scroll::-webkit-scrollbar{width:5px;height:5px}
   .uih-body-scroll::-webkit-scrollbar-track{background:var(--bg2)}
@@ -225,8 +259,9 @@
   .uih-table col.c-circ{width:6%}
   .uih-table col.c-done{width:6%}
   .uih-table th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-  .uih-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
+  .uih-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;transition:background-color .15s ease}
   .uih-table tr:last-child td{border-bottom:none}
+  .uih-table tbody tr{cursor:pointer}
   .uih-table tr:hover td{background:var(--panel2)}
   .uih-table .num{font-family:var(--mono);color:var(--txt3)}
   .uih-table .purpose{font-size:11.5px}
@@ -243,16 +278,57 @@
   @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
   .uih-table tr.row-entering{animation:row-in .3s ease-out both}
   .all-th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
-  #ticketsCard td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
+  #ticketsCard tbody tr{height:42px}
+  #ticketsCard td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background-color .15s ease}
+  #ticketsCard td.note-cell{white-space:normal}
   #ticketsCard tr:last-child td{border-bottom:none}
   #ticketsCard tr:hover td{background:var(--panel2)}
   #ticketsCard tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
   #ticketsCard tr.row-entering{animation:row-in .3s ease-out both}
 
+  /* ---------- NOTE POPUP ---------- */
+  .popup-overlay{display:flex;position:fixed;inset:0;z-index:9998;background:rgba(6,10,18,.55);
+    backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:40px 20px;
+    overflow-y:auto;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+  .popup-overlay.open{opacity:1;visibility:visible}
+  .popup-box{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;max-width:860px;
+    width:100%;margin:auto 0;max-height:90vh;overflow-y:auto;padding:20px 26px;position:relative;
+    backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+    box-shadow:0 16px 50px var(--glass-shadow),inset 0 1px 0 var(--glass-highlight),inset 0 0 0 1px rgba(255,255,255,.18);
+    transform:scale(.94) translateY(10px);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+  .popup-overlay.open .popup-box{transform:scale(1) translateY(0)}
+  .popup-box h3{margin:0 0 10px;font-size:14px;color:var(--txt3);font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase}
+  .popup-box p{margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;color:var(--txt);word-break:break-word}
+  .popup-box .close{position:absolute;top:12px;right:14px;width:30px;height:30px;display:grid;place-items:center;
+    cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;background:var(--glass-bg);border:1px solid var(--glass-border);
+    border-radius:999px;padding:0;backdrop-filter:blur(10px)}
+  .popup-box .close:hover{color:var(--bad);background:var(--glass-bg-strong)}
+  html.light .popup-overlay{background:rgba(220,228,240,.7)}
+  .popup-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+  .popup-detail .row.full{grid-column:1 / -1}
+  .popup-detail .row{border-bottom:1px solid var(--line);padding-bottom:9px}
+  .popup-detail .row .lab{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);font-family:var(--mono)}
+  .popup-detail .row .val{display:block;margin-top:3px;font-size:15px;line-height:1.5;color:var(--txt);
+    white-space:pre-wrap;word-break:break-word}
+  @media(max-width:560px){.popup-detail{grid-template-columns:1fr}}
+  #ticketsCard tbody tr{cursor:pointer}
+
+  /* ---------- ACK MODAL ---------- */
+  .popup-box.ack-box{max-width:940px}
+  .ack-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+  .ack-col{display:flex;flex-direction:column;gap:8px}
+  .ack-col-title{font-size:11px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;
+    color:var(--txt3);margin-bottom:2px}
+  .ack-input{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:7px;
+    color:var(--txt);font-family:var(--sans);font-size:12.5px;padding:8px 10px;outline:none}
+  .ack-input:focus{border-color:var(--signal)}
+  .ack-input::placeholder{color:var(--txt3)}
+  .ack-error{color:var(--bad);font-size:12px;margin-top:10px;font-family:var(--mono)}
+  @media(max-width:560px){.ack-grid{grid-template-columns:1fr}}
+
 
   @media(max-width:920px){
     .grid{grid-template-columns:1fr}
-    .kpis{grid-template-columns:repeat(2,1fr)}
   }
 
   /* ── Light theme (day shift) ── */
@@ -301,10 +377,13 @@
       <div class="logo"><img src="/logo.jpeg" alt="Logo"></div>
       <div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>NOC · Shift Handover Dashboard</h1>
-          <span id="shiftLabel" style="font-family:var(--sans);font-size:13px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:.5px;transition:.3s"></span>
+          <h1>Shift Handover Dashboard</h1>
+          <div class="toggle" id="toggle">
+            <button data-shift="day" class="active"><span class="ic">☀️</span> กะกลางวัน</button>
+            <button data-shift="night"><span class="ic">🌙</span> กะกลางคืน</button>
+          </div>
         </div>
-        <div class="sub">REVENUE DEPARTMENT NOC · RD-0033-68 MA 69</div>
+        <div class="sub">REVENUE DEPARTMENT NOC</div>
       </div>
     </div>
     <div class="clock">
@@ -313,33 +392,42 @@
     </div>
   </header>
 
-  <div class="shiftbar">
-    <div class="toggle" id="toggle">
-      <button data-shift="day" class="active"><span class="ic">☀️</span> กะกลางวัน</button>
-      <button data-shift="night"><span class="ic">🌙</span> กะกลางคืน</button>
-    </div>
-    <div class="relay">
-      <div class="seg"><span class="lab">ส่งมอบจาก</span><span class="who" id="relayFrom">กะกลางคืน</span></div>
-      <div class="arrow"></div>
-      <div class="seg"><span class="lab">รับช่วงต่อ</span><span class="who" id="relayTo">กะกลางวัน</span></div>
-      <button class="ackbtn" id="ackBtn">รับมอบงาน</button>
-    </div>
-  </div>
-
-  <div class="kpis" id="kpis"></div>
 
   <!-- TOP GRID: Ticket | UIH Mail (equal) -->
   <div class="grid">
     <!-- LEFT: Ticket -->
     <div class="col">
+      <div class="kpis" id="kpisPri" style="grid-template-columns:repeat(5,1fr);margin-top:0"></div>
       <div class="card">
         <div class="head">
           <div class="ttl"><span class="dot" style="background:var(--signal)"></span> Ticket ค้าง ต้องดำเนินการต่อ</div>
-          <span class="count" id="tkCount">0</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="count" id="tkCount">0</span>
+            <button id="refreshPendingTicketsBtn" class="btn-sm" onclick="loadPendingTickets()" style="padding:3px 9px;font-size:11px">↻</button>
+          </div>
+        </div>
+        <div style="padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg2);display:flex;gap:8px;flex-wrap:wrap">
+          <input id="tkSearch" type="text" placeholder="Search ticket no. / subject / site / note…"
+            style="flex:1;min-width:160px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
+                   color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
+          <select id="tkReqTypeFilter" style="font-family:var(--mono);font-size:11px;background:var(--panel);
+              border:1px solid var(--line2);border-radius:6px;color:var(--txt);padding:6px 8px;cursor:pointer;
+              outline:none;max-width:220px">
+            <option value="">All request types</option>
+          </select>
+          <select id="tkPriFilter" style="font-family:var(--mono);font-size:11px;background:var(--panel);
+              border:1px solid var(--line2);border-radius:6px;color:var(--txt);padding:6px 8px;cursor:pointer;
+              outline:none">
+            <option value="">All priorities</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="Scheduled">Scheduled</option>
+          </select>
         </div>
         <div class="body" id="tickets"></div>
         <div class="body" style="padding-top:0">
-          <button class="addbtn" data-add="ticket">+ เพิ่ม Ticket ค้าง</button>
           <div class="form" id="form-ticket">
             <div class="grid2">
               <input id="tk-id" placeholder="Ticket# เช่น INC-25061901">
@@ -366,6 +454,7 @@
 
     <!-- RIGHT: UIH Daily Mail -->
     <div class="col">
+      <div class="kpis" id="kpisPm" style="grid-template-columns:repeat(2,1fr);margin-top:0"></div>
       <div class="card" id="pmCard">
         <div class="head">
           <div class="ttl"><span class="dot" style="background:var(--signal)"></span> ใบแจ้งงาน RD วันนี้</div>
@@ -401,15 +490,10 @@
   <!-- ALL TICKETS CARD -->
   <div class="card" id="ticketsCard" style="margin-top:18px">
     <div class="head">
-      <div class="ttl"><span class="dot" style="background:var(--night)"></span> Ticket ทั้งหมด</div>
+      <div class="ttl"><span class="dot" style="background:var(--night)"></span> PM Tickets วันนี้</div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="count" id="ticketsCount">0</span>
         <a href="/tickets" id="moreTicketsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
-        <select id="ticketsDoneFilter" onchange="filterTickets()" style="font-family:var(--mono);font-size:11px;background:var(--bg2);border:1px solid var(--line2);border-radius:5px;color:var(--txt);padding:3px 7px;cursor:pointer;outline:none">
-          <option value="all">All</option>
-          <option value="pending">Not Done</option>
-          <option value="done">Done</option>
-        </select>
         <button id="refreshTicketsBtn" class="btn-sm" onclick="loadTickets()" style="padding:3px 9px;font-size:11px">↻</button>
       </div>
     </div>
@@ -418,18 +502,18 @@
         style="width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
                color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
     </div>
-    <div style="overflow-x:auto;overflow-y:auto;max-height:420px;scrollbar-gutter:stable">
+    <div style="overflow-x:auto;overflow-y:auto;height:238px;scrollbar-gutter:stable">
       <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px">
         <colgroup>
-          <col style="width:5%"><col style="width:30px"><col style="width:10%"><col style="width:22%">
+          <col style="width:30px"><col style="width:10%"><col style="width:22%">
           <col style="width:14%"><col style="width:10%"><col style="width:20%"><col style="width:11%">
         </colgroup>
         <thead><tr>
-          <th class="all-th">Done</th><th class="all-th">#</th><th class="all-th">Ticket No.</th><th class="all-th">Subject</th>
+          <th class="all-th">#</th><th class="all-th">Ticket No.</th><th class="all-th">Subject</th>
           <th class="all-th">Location</th><th class="all-th">Room</th><th class="all-th">Note</th><th class="all-th">Due Date</th>
         </tr></thead>
         <tbody id="ticketsTableBody">
-          <tr><td colspan="8" class="empty" style="padding:24px">Loading…</td></tr>
+          <tr><td colspan="7" class="empty" style="padding:24px">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -437,54 +521,39 @@
     </div>
   </div>
 
-  <!-- BOTTOM GRID: Coord | Note -->
-  <div class="grid">
-    <div class="col">
-      <!-- NIGHT: COORD -->
-      <div class="card" id="coordCard" style="display:none">
-        <div class="head">
-          <div class="ttl"><span class="dot" style="background:var(--night)"></span> ตารางประสานงาน · เปลี่ยนอุปกรณ์ / งานกลางคืน</div>
-          <span class="count" id="coordCount">0</span>
-        </div>
-        <div class="body" id="coordList"></div>
-        <div class="body" style="padding-top:0">
-          <button class="addbtn" data-add="coord">+ เพิ่มงานประสานกลางคืน</button>
-          <div class="form" id="form-coord">
-            <input id="co-title" placeholder="งาน เช่น เปลี่ยน Router สาขาขอนแก่น (RMA)">
-            <div class="grid2">
-              <input id="co-dev" placeholder="Device / IP">
-              <input id="co-window" placeholder="Change Window เช่น 00:30-02:00">
-            </div>
-            <div class="grid2">
-              <input id="co-team" placeholder="ทีมที่ประสาน เช่น Vendor / Field HQ">
-              <input id="co-contact" placeholder="ผู้ติดต่อ / เบอร์">
-            </div>
-            <input id="co-rfc" placeholder="RFC# / Ticket# (ถ้ามี)">
-            <div class="frow">
-              <button class="btn-sm" data-cancel="coord">ยกเลิก</button>
-              <button class="btn-sm primary" data-save="coord">บันทึก</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col">
-      <!-- HANDOVER NOTE -->
-      <div class="card">
-        <div class="head">
-          <div class="ttl"><span class="dot" style="background:var(--ok)"></span> บันทึกส่งมอบกะ (Handover Note)</div>
-        </div>
-        <div class="body">
-          <textarea class="note" id="noteBox" placeholder="สรุปสำคัญสำหรับกะถัดไป — เหตุการณ์ระหว่างกะ, Ticket ที่ต้องจับตา, สิ่งที่รอผลจาก Vendor/ISP ..."></textarea>
-          <div class="notehint" id="ackInfo">ยังไม่มีการรับมอบงาน</div>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 
-  <div class="foot">
-    <span>ข้อมูลถูกบันทึกอัตโนมัติบนเครื่องนี้ · แก้หัวข้อ/ดำเนินการล่าสุดได้โดยคลิกที่ข้อความ</span>
-    <button id="resetBtn">ล้างข้อมูลทั้งหมด</button>
+<div class="popup-overlay" id="notePopup">
+  <div class="popup-box">
+    <button class="close" id="notePopupClose">×</button>
+    <h3 id="notePopupTitle">หมายเหตุ</h3>
+    <div id="notePopupBody"></div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="ackModal">
+  <div class="popup-box ack-box">
+    <button class="close" id="ackModalClose">×</button>
+    <h3>บันทึกการส่งมอบ-รับมอบงาน</h3>
+    <div class="ack-grid">
+      <div class="ack-col">
+        <div class="ack-col-title">ผู้ส่งมอบงาน</div>
+        <input class="ack-input" id="ack-from-fname" placeholder="Name">
+        <input class="ack-input" id="ack-from-lname" placeholder="Surname">
+        <input class="ack-input" id="ack-from-email" placeholder="email @pccth.com">
+      </div>
+      <div class="ack-col">
+        <div class="ack-col-title">ผู้รับมอบงาน</div>
+        <input class="ack-input" id="ack-to-fname" placeholder="Name">
+        <input class="ack-input" id="ack-to-lname" placeholder="Surname">
+        <input class="ack-input" id="ack-to-email" placeholder="email @pccth.com">
+      </div>
+    </div>
+    <div class="ack-error" id="ackError" style="display:none"></div>
+    <div class="frow" style="margin-top:14px">
+      <button class="btn-sm" id="ackCancel">ยกเลิก</button>
+      <button class="btn-sm primary" id="ackConfirm">ยืนยันรับมอบงาน</button>
+    </div>
   </div>
 </div>
 
@@ -492,7 +561,11 @@
 (function(){
   "use strict";
   var KEY = "noc:handover:v1";
-  var shift = "day";
+  function defaultShiftByTime(){
+    var hour=parseInt(new Date().toLocaleString("en-US",{timeZone:"Asia/Bangkok",hour:"numeric",hourCycle:"h23"}),10);
+    return (hour>=20||hour<8)?"night":"day";
+  }
+  var shift = defaultShiftByTime();
 
   /* ---------- storage (graceful fallback) ---------- */
   var mem = null;
@@ -512,12 +585,7 @@
     return {
       ack:{day:null,night:null},
       notes:{day:"", night:""},
-      tickets:[],
-      coord:[
-        {id:"co1",title:"เปลี่ยน Router สาขาขอนแก่น (RMA Hardware)",dev:"RTR-KKN-02",window:"00:30-02:00",team:"Vendor",contact:"คุณเอก 081-xxx-xxxx",rfc:"CHG-250619-04"},
-        {id:"co2",title:"Firmware Upgrade Core Switch HQ",dev:"CSW-HQ-CORE-01",window:"02:00-03:30",team:"L3 + Field HQ",contact:"NOC Sup 02-xxx-xxxx",rfc:"CHG-250619-05"},
-        {id:"co3",title:"ISP เข้าตรวจ Last mile วงจรเชียงใหม่",dev:"วงจร CNX-WAN",window:"01:00-04:00",team:"ISP",contact:"NOC ISP 1888",rfc:"TT-88213"}
-      ]
+      tickets:[]
     };
   }
   var state = seed();
@@ -525,6 +593,13 @@
 
   /* ---------- helpers ---------- */
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function truncateText(s,max){
+    s=s==null?"":String(s);
+    if(s.length<=max)return{text:s,trunc:false};
+    var cut=s.slice(0,max);
+    var trimmed=cut.replace(/\s+\S*$/,"");
+    return{text:(trimmed||cut).trim(),trunc:true};
+  }
   function splitTime(str){
     if(!str||str==="N/A")return["—","—"];
     var parts=str.split(/\s*[-–]\s*(?=\d{2}:\d{2})/);
@@ -543,6 +618,19 @@
     if(m)return parseInt(m[1])+" hr(s)";
     return str;
   }
+  function isReportedToday(reportDate){
+    if(!reportDate)return false;
+    var d=new Date(reportDate);
+    if(isNaN(d))return false;
+    var opts={timeZone:"Asia/Bangkok"};
+    return d.toLocaleDateString("en-CA",opts)===new Date().toLocaleDateString("en-CA",opts);
+  }
+  function formatUpdatedAt(dateStr){
+    if(!dateStr)return null;
+    var d=new Date(dateStr);
+    if(isNaN(d))return null;
+    return d.toLocaleString("en-GB",{timeZone:"Asia/Bangkok",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  }
   function slaInfo(due){
     var m = Math.round((due-Date.now())/60000);
     if(m<0) return {cls:"bad",txt:"เกิน SLA "+Math.abs(m)+"m"};
@@ -557,68 +645,75 @@
   function render(){
     // shift dependent labels
     document.getElementById("pmCard").style.display    = "";
-    document.getElementById("coordCard").style.display = shift==="night"?"":"none";
-    document.getElementById("relayFrom").textContent = shift==="day"?"กะกลางคืน":"กะเช้า";
-    document.getElementById("relayTo").textContent   = shift==="day"?"กะกลางวัน":"กะกลางคืน";
     document.querySelectorAll("#toggle button").forEach(function(b){b.classList.toggle("active",b.dataset.shift===shift);});
 
-    renderKPIs(); renderTickets(); renderCoord();
-
-    // note + ack per shift
-    document.getElementById("noteBox").value = state.notes[shift]||"";
-    var ack = state.ack[shift];
-    var btn = document.getElementById("ackBtn");
-    if(ack){ btn.classList.add("done"); btn.textContent="✓ รับมอบแล้ว";
-      document.getElementById("ackInfo").textContent = "รับมอบโดย "+ack.by+" · "+ack.at;
-    } else { btn.classList.remove("done"); btn.textContent="รับมอบงาน";
-      document.getElementById("ackInfo").textContent = "ยังไม่มีการรับมอบงาน";
-    }
+    renderKPIs(); renderTickets();
   }
 
   function renderKPIs(){
-    var open = state.tickets.length;
-    var crit = state.tickets.filter(function(t){return t.pri==="Critical"||t.pri==="High";}).length;
-    var sla  = state.tickets.filter(function(t){var m=(t.due-Date.now())/60000;return m<=30;}).length;
-    var right = shift==="day"
-      ? {n:uihRecords.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"}
-      : {n:state.coord.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"};
+    var right = {n:uihRecords.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"};
     var ma = {n:tickets.length, l:"งาน PM ทั้งหมด - MA", cls:"k-ma"};
-    var data=[
-      {cls:"k-open",n:open,l:"Ticket ค้างทั้งหมด"},
-      {cls:"k-crit",n:crit,l:"Critical / High ต้องจับตา"},
-      {cls:"k-sla",n:sla,l:"SLA ใกล้ครบ / เกิน"},
-      ma,
-      right
+    function kpiHTML(k){return '<div class="kpi '+k.cls+'"><div class="bar"></div><div class="n">'+k.n+'</div><div class="l">'+k.l+'</div></div>';}
+    var priCount=function(p){return state.tickets.filter(function(t){return t.pri===p;}).length;};
+    var priData=[
+      {cls:"k-pri-critical",n:priCount("Critical"),l:"Critical"},
+      {cls:"k-pri-high",n:priCount("High"),l:"High"},
+      {cls:"k-pri-medium",n:priCount("Medium"),l:"Medium"},
+      {cls:"k-pri-low",n:priCount("Low"),l:"Low"},
+      {cls:"k-pri-scheduled",n:priCount("Scheduled"),l:"Scheduled"}
     ];
-    document.getElementById("kpis").innerHTML = data.map(function(k){
-      return '<div class="kpi '+k.cls+'"><div class="bar"></div><div class="n">'+k.n+'</div><div class="l">'+k.l+'</div></div>';
+    document.getElementById("kpisPri").innerHTML = priData.map(kpiHTML).join("");
+    document.getElementById("kpisPm").innerHTML = [ma,right].map(kpiHTML).join("");
+  }
+
+  function populateReqTypeFilter(){
+    var sel=document.getElementById("tkReqTypeFilter"); if(!sel)return;
+    var cur=sel.value;
+    var types=Array.from(new Set(state.tickets.map(function(t){return t.reqtype;}).filter(Boolean))).sort();
+    sel.innerHTML='<option value="">ทุกประเภทงาน</option>'+types.map(function(rt){
+      return '<option value="'+esc(rt)+'"'+(rt===cur?' selected':'')+'>'+esc(rt)+'</option>';
     }).join("");
   }
 
   function renderTickets(){
+    populateReqTypeFilter();
     var el=document.getElementById("tickets");
-    document.getElementById("tkCount").textContent=state.tickets.length;
-    if(!state.tickets.length){el.innerHTML='<div class="empty">— ไม่มี Ticket ค้าง —</div>';return;}
-    // sort by priority then sla
-    var order={Critical:0,High:1,Medium:2,Low:3,Scheduled:4};
-    var ts=state.tickets.slice().sort(function(a,b){return (order[a.pri]-order[b.pri])||(a.due-b.due);});
+    var q=(document.getElementById("tkSearch")||{value:""}).value.toLowerCase().trim();
+    var rt=(document.getElementById("tkReqTypeFilter")||{value:""}).value;
+    var pf=(document.getElementById("tkPriFilter")||{value:""}).value;
+    var all=state.tickets;
+    var filtered=all.filter(function(t){
+      if(rt && t.reqtype!==rt) return false;
+      if(pf && t.pri!==pf) return false;
+      if(q){
+        var hay=[t.id,t.title,t.reqtype,t.site,t.note,t.pri,stLabel(t.state)].filter(Boolean).join(" ").toLowerCase();
+        if(hay.indexOf(q)<0) return false;
+      }
+      return true;
+    });
+    document.getElementById("tkCount").textContent=filtered.length+"/"+all.length;
+    if(!filtered.length){el.innerHTML='<div class="empty">— ไม่มี Ticket ค้าง —</div>';return;}
+    // sort by ticket no. (numeric part), newest/highest first
+    function ticketNum(id){
+      var n=parseInt(String(id).replace(/[^0-9]/g,""),10);
+      return isNaN(n)?-Infinity:n;
+    }
+    var ts=filtered.slice().sort(function(a,b){return ticketNum(b.id)-ticketNum(a.id);});
     el.innerHTML=ts.map(function(t){
       var s=slaInfo(t.due);
+      var note=truncateText(t.note,68);
+      var upd=formatUpdatedAt(t.lastUpdated||t.reportDate);
       return '<div class="ticket" data-id="'+t.id+'">'
         +'<div class="top">'
           +'<span class="pill pri-'+t.pri+'">'+t.pri+'</span>'
           +'<span class="pill typ">Ticket No.</span>'
           +'<span class="tid">'+esc(t.id)+'</span>'
-          +'<span class="statetag st-'+t.state+'">'+stLabel(t.state)+'</span>'
           +'<span class="sla '+s.cls+'">⏱ '+s.txt+'</span>'
         +'</div>'
-        +'<div class="title" data-edit="title">'+esc(t.title)+'</div>'
-        +'<div class="meta"><span>ประเภทงาน <b class="mono">'+esc(t.reqtype)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span></div>'
-        +'<div class="act" data-edit="note"><b>หมายเหตุ · </b>'+esc(t.note)+'</div>'
-        +'<div class="row-actions">'
-          +'<span class="chip" data-cyc="state">↻ สถานะ</span>'
-          +'<span class="chip del" data-del="ticket">ปิด/ลบ</span>'
-        +'</div>'
+        +'<div class="title">'+esc(t.title)+'</div>'
+        +'<div class="meta"><span>ประเภทงาน <b class="mono">'+esc(t.reqtype)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span>'
+          +(upd?'<span class="pill upd">🕓 '+esc(upd)+'</span>':'')+'</div>'
+        +'<div class="act"><b>หมายเหตุ · </b>'+esc(note.text)+(note.trunc?' <span class="more" data-more="note">...more</span>':'')+'</div>'
       +'</div>';
     }).join("");
   }
@@ -651,6 +746,8 @@
       state: mapStatus(ht.status),
       note: ht.note||"—",
       due: parseDueDate(ht.due_date),
+      reportDate: ht.report_date||null,
+      lastUpdated: ht.last_updated||null,
       _hd:true
     };
   }
@@ -708,7 +805,7 @@
       var locations=circ
         ?circuits.map(function(c){return'<div>'+esc(extractLocation(c.circuit_name))+'</div>';}).join("")
         :"—";
-      return '<tr class="row-entering" style="animation-delay:'+(i*40)+'ms">'
+      return '<tr class="row-entering" data-rid="'+r._id+'" style="animation-delay:'+(i*40)+'ms">'
         +'<td><button class="done-btn" onclick="toggleDone(\''+r._id+'\',this)">Done</button></td>'
         +'<td class="num">'+(i+1)+'</td>'
         +'<td class="purpose">'+esc(r.purpose||"—")+'</td>'
@@ -739,6 +836,28 @@
     }catch(e){alert("Failed to update: "+e.message);}
   }
 
+  document.getElementById("uihTableBody").addEventListener("click",function(e){
+    if(e.target.closest(".done-btn"))return;
+    var tr=e.target.closest("tr[data-rid]"); if(!tr)return;
+    var r=uihRecords.find(function(x){return x._id===tr.dataset.rid;}); if(!r)return;
+    openUIHDetailPopup(r);
+  });
+  function openUIHDetailPopup(r){
+    var st=splitTime(r.start_completion_time||"");
+    var circuits=r.affected_circuits||[];
+    var circList=circuits.length
+      ?circuits.map(function(c){return c.circuit_name;}).filter(Boolean).join("\n")
+      :"—";
+    openDetailPopup("รายละเอียดใบแจ้งงาน",[
+      ["Purpose", r.purpose||"—"],
+      ["Location", r.working_area||"—"],
+      ["Impacted Circuits ("+circuits.length+")", circList],
+      ["Start Time", formatTHT(st[0])],
+      ["Completion Time", formatTHT(st[1])],
+      ["Downtime", formatDowntime(r.downtime_per_circuit)]
+    ]);
+  }
+
   function showLoader(){document.getElementById("capoLoader").style.display="flex";}
   function hideLoader(){document.getElementById("capoLoader").style.display="none";}
 
@@ -763,39 +882,10 @@
     renderKPIs();
   }
 
-  function renderCoord(){
-    var el=document.getElementById("coordList");
-    document.getElementById("coordCount").textContent=state.coord.length;
-    if(!state.coord.length){el.innerHTML='<div class="empty">— ไม่มีงานประสานกลางคืน —</div>';return;}
-    var cs=state.coord.slice().sort(function(a,b){return a.window.localeCompare(b.window);});
-    el.innerHTML=cs.map(function(c){
-      return '<div class="coord" data-id="'+c.id+'">'
-        +'<div class="ch"><span class="window">'+esc(c.window)+'</span><span class="ctitle">'+esc(c.title)+'</span>'
-          +'<span class="x" data-co-del style="margin-left:auto;color:var(--txt3);cursor:pointer;font-size:15px">×</span></div>'
-        +'<div class="cmeta"><span>อุปกรณ์ <b class="mono">'+esc(c.dev)+'</b></span>'
-          +'<span class="team">ทีม <b>'+esc(c.team)+'</b></span>'
-          +'<span>ติดต่อ <b>'+esc(c.contact)+'</b></span>'
-          +(c.rfc?'<span>RFC <b class="mono">'+esc(c.rfc)+'</b></span>':'')+'</div>'
-      +'</div>';
-    }).join("");
-  }
-
   /* ---------- events ---------- */
   function applyTheme(s){
     document.documentElement.classList.toggle("light", s==="day");
     localStorage.setItem("nocTheme", s==="day"?"light":"dark");
-    var lbl=document.getElementById("shiftLabel");
-    if(s==="day"){
-      lbl.textContent="☀️ กะกลางวัน";
-      lbl.style.background="#FFF2BA";
-      lbl.style.color="var(--day)";
-      lbl.style.boxShadow="inset 0 0 0 1px #292F36";
-    } else {
-      lbl.textContent="🌙 กะกลางคืน";
-      lbl.style.background="#D2E8FF";
-      lbl.style.color="var(--night)";
-      lbl.style.boxShadow="inset 0 0 0 1px #292F36";
-    }
   }
   applyTheme(shift);
 
@@ -803,49 +893,117 @@
     var b=e.target.closest("button"); if(!b)return; shift=b.dataset.shift; applyTheme(shift); render();
   });
 
-  document.getElementById("ackBtn").addEventListener("click",function(){
-    if(state.ack[shift])return;
-    var by=prompt("ชื่อผู้รับมอบงาน (กะ"+(shift==="day"?"เช้า":"กลางคืน")+"):","");
-    if(by===null)return; by=by.trim()||"NOC";
+  /* ---------- handover ack modal ---------- */
+  var COMPANY_EMAIL_DOMAIN="pccth.com";
+  function isCompanyEmail(v){
+    return new RegExp("^[^\\s@]+@"+COMPANY_EMAIL_DOMAIN.replace(/\./g,"\\.")+"$","i").test(v);
+  }
+  function openAckModal(){
+    ["ack-from-fname","ack-from-lname","ack-from-email","ack-to-fname","ack-to-lname","ack-to-email"].forEach(function(id){
+      document.getElementById(id).value="";
+    });
+    document.getElementById("ackError").style.display="none";
+    document.getElementById("ackModal").classList.add("open");
+  }
+  function closeAckModal(){document.getElementById("ackModal").classList.remove("open");}
+  document.getElementById("ackModalClose").addEventListener("click",closeAckModal);
+  document.getElementById("ackCancel").addEventListener("click",closeAckModal);
+  document.getElementById("ackModal").addEventListener("click",function(e){
+    if(e.target.id==="ackModal")closeAckModal();
+  });
+  document.getElementById("ackConfirm").addEventListener("click",function(){
+    var fFn=val("ack-from-fname"),fLn=val("ack-from-lname"),fEmail=val("ack-from-email");
+    var tFn=val("ack-to-fname"),tLn=val("ack-to-lname"),tEmail=val("ack-to-email");
+    var err=document.getElementById("ackError");
+    if(!fFn||!fLn||!fEmail||!tFn||!tLn||!tEmail){
+      err.textContent="กรุณากรอกข้อมูลให้ครบทุกช่อง"; err.style.display="block"; return;
+    }
+    if(!isCompanyEmail(fEmail)||!isCompanyEmail(tEmail)){
+      err.textContent="อีเมลต้องเป็นอีเมลบริษัท (@"+COMPANY_EMAIL_DOMAIN+")"; err.style.display="block"; return;
+    }
     var d=new Date();
-    state.ack[shift]={by:by,at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})};
+    state.ack[shift]={
+      fromName:fFn+" "+fLn, fromEmail:fEmail,
+      toName:tFn+" "+tLn, toEmail:tEmail,
+      at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})
+    };
     save();render();
+    closeAckModal();
     shift=shift==="day"?"night":"day";
     applyTheme(shift);
     render();
   });
 
-  document.getElementById("noteBox").addEventListener("input",function(){
-    state.notes[shift]=this.value; save();
-  });
+  document.getElementById("tkSearch").addEventListener("input",renderTickets);
+  document.getElementById("tkReqTypeFilter").addEventListener("change",renderTickets);
+  document.getElementById("tkPriFilter").addEventListener("change",renderTickets);
 
-  // tickets container
+  // click anywhere on a ticket card -> full detail popup
   document.getElementById("tickets").addEventListener("click",function(e){
-    var row=e.target.closest(".ticket"); if(!row)return; var id=row.dataset.id;
-    var t=state.tickets.find(function(x){return x.id===id;}); if(!t)return;
-    if(e.target.dataset.del!=null){ if(confirm("ปิด/ลบ Ticket "+id+" ?")){ state.tickets=state.tickets.filter(function(x){return x.id!==id;}); save();render(); } }
-    else if(e.target.dataset.cyc==="state"){ var seq=["new","prog","hold"]; t.state=seq[(seq.indexOf(t.state)+1)%seq.length]; save();render(); }
+    if(e.target.dataset.more){ showMore(e); return; }
+    var row=e.target.closest(".ticket"); if(!row)return;
+    var t=state.tickets.find(function(x){return x.id===row.dataset.id;}); if(!t)return;
+    openPendingTicketPopup(t);
   });
-  // inline edit (title / act)
-  document.getElementById("tickets").addEventListener("dblclick",inlineEdit);
-  document.getElementById("tickets").addEventListener("click",function(e){
-    if(e.target.dataset.edit){ inlineEdit(e); }
-  });
-  function inlineEdit(e){
-    var node=e.target.closest("[data-edit]"); if(!node)return;
+  var MORE_LABELS={note:"หมายเหตุ"};
+  function showMore(e){
+    var field=e.target.dataset.more;
     var row=e.target.closest(".ticket"); var id=row.dataset.id;
     var t=state.tickets.find(function(x){return x.id===id;}); if(!t)return;
-    var field=node.dataset.edit;
-    var cur = field==="note"? t.note : t.title;
-    var v=prompt(field==="note"?"แก้ไขหมายเหตุ:":"แก้ไขหัวข้อ:",cur);
-    if(v===null)return; t[field]=v.trim(); save();render();
+    openNotePopup(MORE_LABELS[field]||field, t[field]);
   }
 
-  // Coord delete
-  document.getElementById("coordList").addEventListener("click",function(e){
-    if(e.target.dataset.coDel==null)return;
-    var row=e.target.closest(".coord"); var id=row.dataset.id;
-    state.coord=state.coord.filter(function(x){return x.id!==id;}); save();render();
+  /* ---------- note / detail popup ---------- */
+  function openNotePopup(title,text){
+    document.getElementById("notePopupTitle").textContent=title||"หมายเหตุ";
+    document.getElementById("notePopupBody").innerHTML='<p>'+esc(text||"—")+'</p>';
+    document.getElementById("notePopup").classList.add("open");
+  }
+  function openDetailPopup(title,fields){
+    document.getElementById("notePopupTitle").textContent=title;
+    document.getElementById("notePopupBody").innerHTML='<div class="popup-detail">'+fields.map(function(f){
+      var val=f[1]==null?"—":String(f[1]);
+      var isFull=val.length>36||val.indexOf("\n")>=0;
+      return '<div class="row'+(isFull?' full':'')+'"><span class="lab">'+esc(f[0])+'</span><span class="val">'+esc(val)+'</span></div>';
+    }).join("")+'</div>';
+    document.getElementById("notePopup").classList.add("open");
+  }
+  function openPendingTicketPopup(t){
+    var due=t.due?new Date(t.due).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}):"—";
+    var opened=t.reportDate?new Date(t.reportDate).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}):"—";
+    var updated=t.lastUpdated?new Date(t.lastUpdated).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}):"—";
+    openDetailPopup("รายละเอียด Ticket",[
+      ["Ticket No.", t.id||"—"],
+      ["Type", t.typ||"—"],
+      ["Priority", t.pri||"—"],
+      ["Title", t.title||"—"],
+      ["ประเภทงาน", t.reqtype||"—"],
+      ["Site", t.site||"—"],
+      ["Status", stLabel(t.state)||"—"],
+      ["Note", t.note||"—"],
+      ["SLA Due", due],
+      ["วันที่เปิด", opened],
+      ["อัพเดตล่าสุด", updated]
+    ]);
+  }
+  function openTicketDetailPopup(t){
+    openDetailPopup("รายละเอียด Ticket",[
+      ["Ticket No.", t.ticket_id!=null?t.ticket_id:"—"],
+      ["Subject", t.subject||"—"],
+      ["Location", t.location||"—"],
+      ["Room", t.room||"—"],
+      ["Detail", t.detail||"—"],
+      ["Note", t.note||"—"],
+      ["Due Date", t.due_date||"—"]
+    ]);
+  }
+  function closeNotePopup(){document.getElementById("notePopup").classList.remove("open");}
+  document.getElementById("notePopupClose").addEventListener("click",closeNotePopup);
+  document.getElementById("notePopup").addEventListener("click",function(e){
+    if(e.target.id==="notePopup")closeNotePopup();
+  });
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape")closeNotePopup();
   });
 
   // add forms toggle
@@ -856,7 +1014,6 @@
     b.addEventListener("click",function(){ document.getElementById("form-"+b.dataset.cancel).classList.remove("open"); });
   });
   function val(id){var e=document.getElementById(id);return e?e.value.trim():"";}
-  function uid(p){return p+Date.now().toString(36);}
 
   document.querySelector('[data-save="ticket"]').addEventListener("click",function(){
     var id=val("tk-id")||("INC-"+Date.now().toString().slice(-8));
@@ -866,20 +1023,10 @@
     ["tk-id","tk-title","tk-reqtype","tk-site","tk-note"].forEach(function(i){document.getElementById(i).value="";});
     document.getElementById("form-ticket").classList.remove("open"); save();render();
   });
-  document.querySelector('[data-save="coord"]').addEventListener("click",function(){
-    state.coord.push({id:uid("co"),title:val("co-title")||"(งาน)",dev:val("co-dev")||"-",window:val("co-window")||"--:--",
-      team:val("co-team")||"-",contact:val("co-contact")||"-",rfc:val("co-rfc")});
-    ["co-title","co-dev","co-window","co-team","co-contact","co-rfc"].forEach(function(i){document.getElementById(i).value="";});
-    document.getElementById("form-coord").classList.remove("open"); save();render();
-  });
-
-  document.getElementById("resetBtn").addEventListener("click",function(){
-    if(!confirm("ล้างข้อมูลทั้งหมดและกลับเป็นข้อมูลตัวอย่าง?"))return;
-    state=seed(); save(); render();
-  });
 
   setInterval(loadUIHDaily, 60000);
   setInterval(loadPendingTickets, 60000);
+  setInterval(loadTickets, 60000);
 
   /* ---------- clock ---------- */
   function tick(){
@@ -900,10 +1047,7 @@
 
   function filterTickets(){
     var q=(document.getElementById("ticketsSearch").value||"").toLowerCase().trim();
-    var dv=document.getElementById("ticketsDoneFilter").value;
     var filtered=tickets.filter(function(t){
-      if(dv==="done"&&!t.done)return false;
-      if(dv==="pending"&&t.done)return false;
       if(q&&ticketText(t).indexOf(q)<0)return false;
       return true;
     });
@@ -916,47 +1060,43 @@
     var doneCount=tickets.filter(function(t){return t.done;}).length;
     document.getElementById("ticketsCount").textContent=records.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
     if(!records.length){
-      tb.innerHTML='<tr><td colspan="8" class="empty" style="padding:20px">No tickets.</td></tr>';
+      tb.innerHTML='<tr><td colspan="7" class="empty" style="padding:20px">No tickets.</td></tr>';
       return;
     }
     var rows=records.map(function(t,i){
       var isDone=!!t.done;
-      var doneBtn='<button class="done-btn'+(isDone?" is-done":"")+'" onclick="ticketToggleDone(\''+t._id+'\',this)">'+(isDone?"✓ Done":"Done")+'</button>';
-      return '<tr class="row-entering'+(isDone?" row-done":"")+'" style="animation-delay:'+(i*35)+'ms">'
-        +'<td>'+doneBtn+'</td>'
+      var note=truncateText(t.note,40);
+      return '<tr class="row-entering'+(isDone?" row-done":"")+'" data-tid="'+t._id+'" style="animation-delay:'+(i*35)+'ms">'
         +'<td style="font-family:var(--mono);color:var(--txt3)">'+(i+1)+'</td>'
         +'<td class="mono" style="font-family:var(--mono)">'+esc(t.ticket_id!=null?t.ticket_id:"—")+'</td>'
         +'<td>'+esc(t.subject||"—")+'</td>'
         +'<td>'+esc(t.location||"—")+'</td>'
         +'<td>'+esc(t.room||"—")+'</td>'
-        +'<td>'+esc(t.note||"—")+'</td>'
+        +'<td class="note-cell">'+esc(note.text)+(note.trunc?' <span class="more">...more</span>':'')+'</td>'
         +'<td style="font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)">'+esc(t.due_date||"—")+'</td>'
       +'</tr>';
     });
     tb.innerHTML=rows.join("");
   }
 
-  async function ticketToggleDone(id, btn){
-    var nowDone=!btn.classList.contains("is-done");
-    try{
-      var res=await fetch("/api/uih-ticket/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
-      if(!res.ok)throw new Error("HTTP "+res.status);
-      var t=tickets.find(function(x){return x._id===id;});
-      if(t)t.done=nowDone;
-      filterTickets();
-    }catch(e){alert("Failed: "+e.message);}
-  }
+  document.getElementById("ticketsTableBody").addEventListener("click",function(e){
+    var tr=e.target.closest("tr[data-tid]"); if(!tr)return;
+    var t=tickets.find(function(x){return x._id===tr.dataset.tid;}); if(!t)return;
+    openTicketDetailPopup(t);
+  });
 
   async function loadTickets(){
     try{
       var res=await fetch("/api/uih-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
       var all=await res.json();
-      tickets=all.filter(function(t){return t.request_type==="Preventive Maintenance Plan";});
+      tickets=all.filter(function(t){
+        return t.request_type==="Preventive Maintenance Plan" && isReportedToday(t.report_date);
+      });
       filterTickets();
       renderKPIs();
     }catch(e){
-      document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="8" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
+      document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="7" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
     }
   }
 
@@ -972,7 +1112,7 @@
     window.toggleDone=toggleDone;
     window.filterTickets=filterTickets;
     window.loadTickets=loadTickets;
-    window.ticketToggleDone=ticketToggleDone;
+    window.loadPendingTickets=loadPendingTickets;
   })();
 })();
 </script>

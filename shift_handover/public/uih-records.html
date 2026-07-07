@@ -14,6 +14,11 @@
     --radius:10px;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
     --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
+    --glass-bg:rgba(255,255,255,.42);
+    --glass-bg-strong:rgba(255,255,255,.6);
+    --glass-border:rgba(255,255,255,.55);
+    --glass-highlight:rgba(255,255,255,.75);
+    --glass-shadow:rgba(41,47,54,.22);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--sans);background:radial-gradient(1200px 600px at 80% -10%,#E0DBD8 0%,transparent 60%),var(--bg);color:var(--txt);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
@@ -22,7 +27,8 @@
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
     padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px}
   .back{font-family:var(--sans);font-size:13px;font-weight:600;color:#3E2723;
-    background:transparent;border:1px solid var(--line2);border-radius:7px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s}
+    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:9px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s;
+    backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);box-shadow:inset 0 1px 0 var(--glass-highlight)}
   .back:hover{background:var(--signal);color:#FAF5F1}
   header h1{font-size:15px;font-weight:700}
   header .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
@@ -64,7 +70,7 @@
   th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;
     text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
   td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);
-    overflow:hidden;text-overflow:ellipsis}
+    overflow:hidden;text-overflow:ellipsis;transition:background-color .15s ease}
   tr:last-child td{border-bottom:none}
   tr:hover td{background:var(--panel2)}
   tr.row-today td{background:rgba(164,31,19,.06);border-bottom-color:rgba(164,31,19,.12)}
@@ -88,6 +94,7 @@
     cursor:pointer;border:1px solid var(--line2);background:transparent;color:#3E2723;transition:.13s}
   .btn-del:hover:not(:disabled){background:var(--bad);color:#fff;border-color:var(--bad)}
   .btn-edit:disabled,.btn-del:disabled{opacity:.3;cursor:not-allowed}
+  .btn-edit:active:not(:disabled),.btn-del:active:not(:disabled),.done-btn:active,.back:active{transform:scale(.94)}
   .empty{text-align:center;color:var(--txt3);font-family:var(--mono);font-size:12px;padding:40px}
   @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
   tr.row-entering{animation:row-in .3s ease-out both}
@@ -95,12 +102,41 @@
   .done-btn:hover{background:#bbf7d0;color:#000;border-color:#22c55e}
   .done-btn.is-done{background:#14532d22;border-color:#22c55e;color:#3E2723}
   tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
+  tbody tr{cursor:pointer}
+
+  /* ---- detail popup ---- */
+  .popup-overlay{display:flex;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.35);align-items:flex-start;justify-content:center;padding:40px 20px;
+    overflow-y:auto;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+  .popup-overlay.open{opacity:1;visibility:visible}
+  .popup-box{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;max-width:860px;
+    width:100%;margin:auto 0;max-height:90vh;overflow-y:auto;padding:20px 26px;position:relative;
+    backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+    box-shadow:0 16px 50px var(--glass-shadow),inset 0 1px 0 var(--glass-highlight),inset 0 0 0 1px rgba(255,255,255,.18);
+    transform:scale(.94) translateY(10px);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+  .popup-overlay.open .popup-box{transform:scale(1) translateY(0)}
+  .popup-box h3{margin:0 0 10px;font-size:16px;font-weight:700}
+  .popup-box .close{position:absolute;top:12px;right:14px;width:30px;height:30px;display:grid;place-items:center;
+    cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;background:var(--glass-bg);border:1px solid var(--glass-border);
+    border-radius:999px;padding:0;backdrop-filter:blur(10px)}
+  .popup-box .close:hover{color:var(--bad);background:var(--glass-bg-strong)}
+  .popup-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+  .popup-detail .row.full{grid-column:1 / -1}
+  .popup-detail .row{border-bottom:1px solid var(--line);padding-bottom:9px}
+  .popup-detail .row .lab{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);font-family:var(--mono)}
+  .popup-detail .row .val{display:block;margin-top:3px;font-size:15px;line-height:1.5;color:var(--txt);
+    white-space:pre-wrap;word-break:break-word}
+  @media(max-width:560px){.popup-detail{grid-template-columns:1fr}}
 
   /* Modal */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
-  .modal-overlay.open{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--line2);border-radius:var(--radius);width:500px;max-width:95vw;box-shadow:0 12px 40px rgba(0,0,0,.4)}
-  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .modal-overlay{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+  .modal-overlay.open{opacity:1;visibility:visible}
+  .modal{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:18px;width:500px;max-width:95vw;
+    backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+    box-shadow:0 16px 50px var(--glass-shadow),inset 0 1px 0 var(--glass-highlight),inset 0 0 0 1px rgba(255,255,255,.18);
+    transform:scale(.94) translateY(10px);transition:transform .22s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+  .modal-overlay.open .modal{transform:scale(1) translateY(0)}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--glass-border);background:var(--glass-bg-strong)}
   .modal-head h2{font-size:14px;font-weight:700}
   .modal-close{background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1}
   .modal-close:hover{color:var(--txt)}
@@ -135,6 +171,7 @@
   html.light body{background:var(--bg);color:var(--txt)}
   html.light th{background:var(--bg2)}
   html.light .modal-overlay{background:rgba(0,0,0,.3)}
+  html.light .popup-overlay{background:rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -220,6 +257,14 @@
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-save" id="btnSave" onclick="saveEdit()">Save</button>
     </div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="detailPopup">
+  <div class="popup-box">
+    <button class="close" id="detailPopupClose">×</button>
+    <h3>Record Detail</h3>
+    <div id="detailPopupBody"></div>
   </div>
 </div>
 
@@ -321,7 +366,7 @@
       if(!circuits.length){
         rowNum++;
         var delay='style="animation-delay:'+(rowNum*35)+'ms"';
-        rows.push('<tr class="row-entering'+rowBase+'" '+delay+'>'
+        rows.push('<tr class="row-entering'+rowBase+'" data-rid="'+r._id+'" '+delay+'>'
           +doneCell
           +'<td class="num">'+rowNum+'</td>'
           +sharedLeft+'<td>—</td>'+sharedRight
@@ -337,7 +382,7 @@
             +'<div class="circuit-name">'+esc(c.circuit_name||"—")+'</div>'
             +'</td>';
           var trClass='row-entering'+(ci>0?' circuit-extra':'')+rowBase;
-          rows.push('<tr class="'+trClass+'" '+delay+'>'
+          rows.push('<tr class="'+trClass+'" data-rid="'+r._id+'" '+delay+'>'
             +doneCell
             +'<td class="num">'+rowNum+'</td>'
             +sharedLeft+impCell+sharedRight+circuitCell+dateCell+actions+'</tr>');
@@ -370,6 +415,45 @@
     currentFiltered=filtered;
     render(filtered);
   }
+
+  /* ---- detail popup ---- */
+  function openDetailPopup(r){
+    var st=splitTime(r.start_completion_time||"");
+    var circuits=r.affected_circuits||[];
+    var circList=circuits.length
+      ?circuits.map(function(c){return (c.cid?"CID "+c.cid+" — ":"")+(c.circuit_name||"—");}).join("\n")
+      :"—";
+    var fields=[
+      ["Purpose", r.purpose||"—"],
+      ["Working Area", r.working_area||"—"],
+      ["Impacted Circuits ("+circuits.length+")", circList],
+      ["Start Time", formatTHT(st[0])],
+      ["Completion Time", formatTHT(st[1])],
+      ["Downtime", formatDowntime(r.downtime_per_circuit)],
+      ["Status", r.status||"—"],
+      ["Received At", formatDate(r.processed_at)]
+    ];
+    document.getElementById("detailPopupBody").innerHTML='<div class="popup-detail">'+fields.map(function(f){
+      var val=f[1]==null?"—":String(f[1]);
+      var isFull=val.length>36||val.indexOf("\n")>=0;
+      return '<div class="row'+(isFull?' full':'')+'"><span class="lab">'+esc(f[0])+'</span><span class="val">'+esc(val)+'</span></div>';
+    }).join("")+'</div>';
+    document.getElementById("detailPopup").classList.add("open");
+  }
+  function closeDetailPopup(){document.getElementById("detailPopup").classList.remove("open");}
+  document.getElementById("detailPopupClose").addEventListener("click",closeDetailPopup);
+  document.getElementById("detailPopup").addEventListener("click",function(e){
+    if(e.target.id==="detailPopup")closeDetailPopup();
+  });
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape")closeDetailPopup();
+  });
+  document.getElementById("tbody").addEventListener("click",function(e){
+    if(e.target.closest(".done-btn")||e.target.closest(".btn-edit")||e.target.closest(".btn-del"))return;
+    var tr=e.target.closest("tr[data-rid]"); if(!tr)return;
+    var r=all.find(function(x){return x._id===tr.dataset.rid;}); if(!r)return;
+    openDetailPopup(r);
+  });
 
   /* ---- edit modal ---- */
   function openEdit(id){

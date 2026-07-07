@@ -1,5 +1,4 @@
 import os
-import re
 from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, HTTPException
@@ -64,33 +63,18 @@ class RecordUpdate(BaseModel):
     done: Optional[bool] = None
 
 
-THT_RE = re.compile(r"(\d{2}):(\d{2})\s*THT\s*(\d{2})/(\d{2})/(\d{4})")
-
-
-def parse_maintenance_window(start_completion_time):
-    """Parse 'HH:MM THT dd/mm/yyyy - HH:MM THT dd/mm/yyyy' into (start, end) datetimes."""
-    if not start_completion_time:
-        return None
-    matches = THT_RE.findall(start_completion_time)
-    if len(matches) != 2:
-        return None
-    try:
-        (h1, mi1, d1, mo1, y1), (h2, mi2, d2, mo2, y2) = matches
-        start = datetime(int(y1), int(mo1), int(d1), int(h1), int(mi1))
-        end = datetime(int(y2), int(mo2), int(d2), int(h2), int(mi2))
-        return start, end
-    except ValueError:
-        return None
-
-
 @app.get("/api/daily")
 def get_daily_records():
     today = datetime.now().date()
     records = list(collection.find().sort("processed_at", -1))
     daily = []
     for r in records:
-        window = parse_maintenance_window(r.get("start_completion_time"))
-        if window and window[0].date() <= today <= window[1].date():
+        processed_at = r.get("processed_at")
+        try:
+            received_date = datetime.fromisoformat(processed_at).date() if processed_at else None
+        except ValueError:
+            received_date = None
+        if received_date == today:
             daily.append(r)
     return [serialize(r) for r in daily]
 

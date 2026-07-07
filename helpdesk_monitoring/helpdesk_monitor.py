@@ -13,8 +13,15 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 HELPDESK_HOST = os.getenv('HELPDESK_HOST', '10.1.18.2')
 HELPDESK_USER = os.getenv('HELPDESK_USER', '')
 HELPDESK_PASS = os.getenv('HELPDESK_PASS', '')
-TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets/"
-GROUP_TICKETS_URL = TICKETS_BASE_URL + "group"
+TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets"
+
+# Statuses that mean the ticket is no longer open. WebHelpDesk tracks "Closed" and
+# "Resolved" as separate terminal statuses — a qualifier excluding only one of them
+# still lets the other flood in from every department, not just this team's queue.
+CLOSED_STATUSES = {"Closed", "Resolved"}
+OPEN_QUALIFIER = " and ".join(
+    f"statustype.statusTypeName != '{s}'" for s in CLOSED_STATUSES
+)
 
 POLL_INTERVAL_SEC = 15 * 60
 
@@ -52,13 +59,17 @@ tickets_collection = db['tickets']
 
 
 def fetch_group_tickets():
-    """Page through the group queue (already full-detail via style=details) until an empty page."""
+    """Page through all open tickets org-wide (not scoped to this account's group),
+    already full-detail via style=details, until an empty page."""
     tickets = []
     page = 1
     while True:
         resp = requests.get(
-            GROUP_TICKETS_URL,
-            params={"username": HELPDESK_USER, "password": HELPDESK_PASS, "style": "details", "page": page},
+            TICKETS_BASE_URL,
+            params={
+                "username": HELPDESK_USER, "password": HELPDESK_PASS,
+                "style": "details", "page": page, "qualifier": OPEN_QUALIFIER
+            },
             verify=False,
             timeout=15
         )
@@ -105,21 +116,25 @@ def extract_ticket_fields(raw):
         "note": notes[0].get('mobileNoteText') if notes else None,
         "due_date": raw.get('displayDueDate'),
         "detail": detail,
+        "report_date": raw.get('reportDateUtc'),
+        "last_updated": raw.get('lastUpdated'),
         "done": False,
         "processed_at": datetime.now().isoformat()
     }
 
 
 def is_not_resolved(raw):
-    """Exclude tickets whose status is Resolved — every other status is allowed through."""
+    """Exclude tickets whose status is terminal (Closed/Resolved) — everything else is allowed through."""
     status = (raw.get('statustype') or {}).get('statusTypeName') or ''
-    return status != 'Resolved'
+    return status not in CLOSED_STATUSES
 
 
 def poll_new_tickets():
     group_tickets = fetch_group_tickets()
     new_count = 0
     updated_count = 0
+    removed_count = 0
+    seen_ids = []
 
     for raw in group_tickets:
         ticket_id = raw.get('id')
@@ -127,6 +142,7 @@ def poll_new_tickets():
         if not is_not_resolved(raw):
             continue
 
+        seen_ids.append(ticket_id)
         data = extract_ticket_fields(raw)
         existing = tickets_collection.find_one({"ticket_id": ticket_id})
 
@@ -141,16 +157,27 @@ def poll_new_tickets():
             new_count += 1
             print(f"  Saved ticket {ticket_id}: {data['subject']}")
 
-    return new_count, updated_count
+    # Prune tickets that dropped out of the live queue (resolved/closed/reassigned) —
+    # nothing else ever removes them, so without this they accumulate here forever.
+    # Guard against a fluke empty response wiping the whole collection.
+    if seen_ids:
+        result = tickets_collection.delete_many({"ticket_id": {"$nin": seen_ids}})
+        removed_count = result.deleted_count
+        if removed_count:
+            print(f"  Removed {removed_count} ticket(s) no longer in the live queue")
+    else:
+        print("  Skipping prune: live queue returned no tickets")
+
+    return new_count, updated_count, removed_count
 
 
 def monitor_helpdesk():
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print(f"[{ts}] Checking group ticket queue...")
     try:
-        new_count, updated_count = poll_new_tickets()
-        if new_count or updated_count:
-            print(f"  Done checking — {new_count} new, {updated_count} updated")
+        new_count, updated_count, removed_count = poll_new_tickets()
+        if new_count or updated_count or removed_count:
+            print(f"  Done checking — {new_count} new, {updated_count} updated, {removed_count} removed")
         else:
             print("  No changes")
     except Exception as e:
