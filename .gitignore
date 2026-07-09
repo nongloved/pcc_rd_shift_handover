@@ -5,6 +5,7 @@
 *.pem
 *.key
 credentials.json
+docker-compose.override.yml.disabled
 
 # Node
 node_modules/
