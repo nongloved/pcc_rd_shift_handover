@@ -34,14 +34,14 @@ def _build_mongo_uri():
 
 MONGO_URI = _build_mongo_uri()
 client = MongoClient(MONGO_URI)
-db = client[os.getenv('MONGO_DB', 'uih_py_db')]
-collection = db['schedules']
+db = client[os.getenv('MONGO_DB', 'uih_pm_mails')]
+collection = db['pm_mails']
 
-helpdesk_db = client[os.getenv('HELPDESK_MONGO_DB', 'helpdesk_db')]
+helpdesk_db = client[os.getenv('HELPDESK_MONGO_DB', 'ma_tickets')]
 tickets_collection = helpdesk_db['tickets']
 
-employee_db = client[os.getenv('EMPLOYEE_MONGO_DB', 'pccrd_employee_db')]
-employees_collection = employee_db['employees']
+employee_db = client[os.getenv('EMPLOYEE_MONGO_DB', 'helpdesk_user_db')]
+employees_collection = employee_db['helpdesk_users']
 
 app = FastAPI()
 

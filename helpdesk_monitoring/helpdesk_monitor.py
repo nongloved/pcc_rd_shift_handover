@@ -51,7 +51,7 @@ def _build_mongo_uri():
 
 
 MONGO_URI = _build_mongo_uri()
-HELPDESK_MONGO_DB = os.getenv('HELPDESK_MONGO_DB', 'helpdesk_db')
+HELPDESK_MONGO_DB = os.getenv('HELPDESK_MONGO_DB', 'ma_tickets')
 
 client = MongoClient(MONGO_URI)
 db = client[HELPDESK_MONGO_DB]
