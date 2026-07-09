@@ -85,6 +85,10 @@ app.put('/api/uih-ticket/:id', (req, res) => {
   proxyMutate('PUT', `/api/tickets/${req.params.id}`, req.body, res);
 });
 
+app.post('/api/verify-employee', (req, res) => {
+  proxyMutate('POST', '/api/verify-employee', req.body, res);
+});
+
 app.get('/records', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uih-records.html'));
 });

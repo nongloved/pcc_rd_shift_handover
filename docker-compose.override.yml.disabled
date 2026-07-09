@@ -1,0 +1,19 @@
+
+services:
+  mail_monitoring:
+    environment:
+      USE_REMOTE_MONGO: "false"
+      MONGO_HOST: pccrd_mongodb_temp
+      MONGO_PORT: "27017"
+
+  helpdesk_monitoring:
+    environment:
+      USE_REMOTE_MONGO: "false"
+      MONGO_HOST: pccrd_mongodb_temp
+      MONGO_PORT: "27017"
+
+  api:
+    environment:
+      USE_REMOTE_MONGO: "false"
+      MONGO_HOST: pccrd_mongodb_temp
+      MONGO_PORT: "27017"

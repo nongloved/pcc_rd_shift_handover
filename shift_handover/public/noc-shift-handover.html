@@ -20,17 +20,20 @@
     --radius:10px;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
     --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
-    --glass-bg:rgba(255,255,255,.42);
-    --glass-bg-strong:rgba(255,255,255,.6);
-    --glass-border:rgba(255,255,255,.55);
-    --glass-highlight:rgba(255,255,255,.75);
+    --glass-bg:rgba(255,255,255,.82);
+    --glass-bg-strong:rgba(255,255,255,.92);
+    --glass-border:rgba(255,255,255,.7);
+    --glass-highlight:rgba(255,255,255,.9);
     --glass-shadow:rgba(41,47,54,.22);
+    --accent-blue:#3B82F6; --accent-blue-dim:rgba(59,130,246,.16);
+    --accent-green:#22C08C; --accent-green-dim:rgba(34,192,140,.16);
+    --bg-glow-1:rgba(59,130,246,.30); --bg-glow-2:rgba(34,192,140,.26); --bg-glow-3:rgba(59,130,246,.16);
   }
   *{box-sizing:border-box}
   html,body{margin:0}
   @media (prefers-reduced-motion:no-preference){
     button,select,input,textarea,.btn-sm,.chip,.addbtn,.ackbtn,.done-btn,.more,.pm .box,
-    .toggle button,.card,.ticket,.kpi{
+    .shift-label,.card,.ticket,.kpi{
       transition:background-color .15s ease,color .15s ease,border-color .15s ease,
         box-shadow .18s ease,transform .15s ease,opacity .15s ease;
     }
@@ -46,11 +49,15 @@
   .kpis{animation:pop-in .35s ease both}
   .card{animation:pop-in .35s ease both}
   .btn-sm:active,.addbtn:active,.ackbtn:active:not(.done),.chip:active,.done-btn:active,
-  .toggle button:active,.close:active{transform:scale(.94)}
+  .close:active{transform:scale(.94)}
   body{
     font-family:var(--sans); background:
+      radial-gradient(1100px 560px at 88% -8%, var(--bg-glow-1) 0%, transparent 60%),
+      radial-gradient(900px 520px at -6% 22%, var(--bg-glow-2) 0%, transparent 58%),
+      radial-gradient(820px 600px at 55% 112%, var(--bg-glow-3) 0%, transparent 62%),
       radial-gradient(1200px 600px at 80% -10%, #E0DBD8 0%, transparent 60%),
       var(--bg);
+    background-attachment:fixed;
     color:var(--txt); min-height:100vh; font-size:14px; line-height:1.5;
     -webkit-font-smoothing:antialiased;
   }
@@ -59,42 +66,44 @@
   /* ---------- HEADER ---------- */
   header{
     display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;
-    padding:16px 18px;background:linear-gradient(180deg,var(--panel),var(--bg2));
-    border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;background:var(--glass-bg);
+    backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
+    border:1px solid var(--glass-border);border-radius:16px;
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 8px 28px var(--glass-shadow);
+    position:relative;overflow:hidden;
   }
+  header::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,var(--accent-blue),var(--accent-green));opacity:.7}
   .brand{display:flex;align-items:center;gap:13px;min-width:0}
-  .logo{
-    width:40px;height:40px;border-radius:9px;flex:none;display:grid;place-items:center;
-    background:#B1CCC8;overflow:hidden;
-    border:1px solid var(--line2);box-shadow:0 0 0 1px #0006 inset;
-  }
-  .logo img{width:100%;height:100%;object-fit:cover}
   .brand h1{font-size:16px;font-weight:700;margin:0;letter-spacing:.2px}
-  .brand .sub{font-family:var(--mono);font-size:11px;color:var(--txt3);letter-spacing:.5px}
+  .header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .clock{font-family:var(--mono);text-align:right}
   .clock .t{font-size:22px;font-weight:600;letter-spacing:1px}
   .clock .d{font-size:11px;color:var(--txt2);letter-spacing:.4px}
 
-  /* ---------- SHIFT BAR (signature) ---------- */
-  .shiftbar{
-    margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;
+  /* ---------- SHIFT LABEL ---------- */
+  .shift-label{
+    font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:9px 16px;
+    backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 2px 10px var(--glass-shadow);
+    position:relative;overflow:hidden;transition:.18s;
   }
-  .toggle{display:flex;gap:4px;background:var(--glass-bg);border:1px solid var(--glass-border);
-    border-radius:999px;padding:4px;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
-    box-shadow:inset 0 1px 0 var(--glass-highlight),0 2px 10px var(--glass-shadow)}
-  .toggle button{
-    font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--txt2);
-    background:transparent;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;
-    display:flex;align-items:center;gap:6px;transition:.18s;white-space:nowrap;
-  }
-  .toggle button .ic{font-size:12px}
-  .toggle button:hover{color:var(--txt)}
-  .toggle button.active[data-shift="day"]{background:#FFF2BA;color:var(--day);box-shadow:inset 0 0 0 1px #6b531f}
-  .toggle button.active[data-shift="night"]{background:#D2E8FF;color:var(--night);box-shadow:inset 0 0 0 1px #292F36}
+  .shift-label::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:999px 999px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none}
+  .shift-label .ic,.shift-label .txt{position:relative;z-index:1}
+  .shift-label .ic{font-size:14px}
+  .shift-label:hover{transform:translateY(-1px)}
+  .shift-label:active{transform:scale(.95)}
+  .shift-label[data-shift="day"]{background:linear-gradient(180deg,rgba(255,244,214,.95),rgba(255,224,140,.55));color:var(--day)}
+  .shift-label[data-shift="night"]{background:linear-gradient(180deg,rgba(214,233,255,.95),rgba(160,200,255,.55));color:var(--night)}
 
   .relay{
     flex:1;min-width:300px;display:flex;align-items:center;gap:14px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;
+    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:10px 16px;
+    backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight);
   }
   .relay .seg{display:flex;flex-direction:column;line-height:1.25}
   .relay .seg .lab{font-size:10px;letter-spacing:1px;color:var(--txt3);font-family:var(--mono);text-transform:uppercase}
@@ -103,23 +112,35 @@
     repeating-linear-gradient(90deg,var(--line2) 0 8px,transparent 8px 14px)}
   .relay .arrow::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left-color:var(--line2)}
   .ackbtn{
-    font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer;
-    border:1px solid #31465A;color:#31465A;background:#D9F0FF;
-    border-radius:9px;padding:9px 16px;white-space:nowrap;transition:.18s;
+    font-family:var(--sans);font-weight:700;font-size:13.5px;cursor:pointer;
+    border:1px solid rgba(58,122,80,.32);color:var(--ok);background:rgba(58,122,80,.12);
+    backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+    border-radius:999px;padding:12px 22px;white-space:nowrap;transition:.18s;
+    display:inline-flex;align-items:center;gap:9px;
+    position:relative;overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 4px 14px rgba(58,122,80,.16);
+    animation:ack-pulse 3.4s ease-in-out infinite;
   }
-  .ackbtn:hover{background:#31465A;color:#D9F0FF}
-  .ackbtn.done{border-color:#31465A;color:#D9F0FF;background:#31465A;cursor:default}
+  @keyframes ack-pulse{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 4px 14px rgba(58,122,80,.16)}
+    50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 4px 15px rgba(58,122,80,.22)}}
+  .ackbtn .ic{font-size:16px;position:relative;z-index:1}
+  .ackbtn::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:999px 999px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none}
+  .ackbtn:hover{background:rgba(58,122,80,.2);transform:translateY(-1px)}
+  .ackbtn.done{background:rgba(58,122,80,.4);color:#fff;cursor:default;animation:none}
 
   /* ---------- KPI ---------- */
   .kpis{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    padding:13px 14px;position:relative;overflow:hidden}
+  .kpi{background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-radius:14px;
+    padding:13px 14px;position:relative;overflow:hidden;
+    backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 4px 16px var(--glass-shadow)}
   .kpi .n{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;
     display:inline-block;animation:num-bounce .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:.12s}
   .kpi .l{font-size:11px;color:var(--txt2);margin-top:6px}
   .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:3px;transform-origin:top;animation:bar-grow .35s ease-out both}
   .kpi.k-pm .bar{background:var(--ok)}
-  .kpi.k-ma .bar{background:var(--night)}
+  .kpi.k-ma .bar{background:var(--accent-blue)}
   .kpi.k-pri-critical .bar{background:var(--bad)} .kpi.k-pri-critical .n{color:var(--bad)}
   .kpi.k-pri-high .bar{background:var(--p2)} .kpi.k-pri-high .n{color:var(--p2)}
   .kpi.k-pri-medium .bar{background:#C9A227} .kpi.k-pri-medium .n{color:#C9A227}
@@ -133,9 +154,12 @@
   /* ---------- GRID ---------- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start}
   .col{display:flex;flex-direction:column;gap:16px;min-width:0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .card{background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;
+    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 6px 22px var(--glass-shadow)}
   .card > .head{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+    padding:13px 16px;border-bottom:1px solid var(--glass-border);
+    background:linear-gradient(135deg,var(--accent-blue-dim),var(--accent-green-dim))}
   .card > .head .ttl{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px}
   .card > .head .ttl .dot{width:8px;height:8px;border-radius:50%}
   .card > .head .count{font-family:var(--mono);font-size:11px;color:var(--txt2);
@@ -144,17 +168,19 @@
   #tickets{max-height:640px;overflow-y:auto;scrollbar-gutter:stable;scroll-behavior:smooth}
   #tickets::-webkit-scrollbar{width:5px}
   #tickets::-webkit-scrollbar-track{background:var(--bg2)}
-  #tickets::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+  #tickets::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent-blue),var(--accent-green));border-radius:3px}
   .addbtn{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--signal);
     background:var(--glass-bg);border:1px dashed var(--line2);border-radius:10px;
     padding:8px;cursor:pointer;transition:.15s;backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%)}
   .addbtn:hover{border-color:var(--signal);background:var(--glass-bg-strong);transform:translateY(-1px)}
 
   /* ---------- TICKET ROW ---------- */
-  .ticket{border:1px solid var(--line);border-radius:9px;background:var(--panel2);
+  .ticket{border:1px solid var(--glass-border);border-radius:12px;background:var(--glass-bg-strong);
     padding:11px 12px;position:relative;display:flex;flex-direction:column;gap:7px;
+    backdrop-filter:blur(12px) saturate(140%);-webkit-backdrop-filter:blur(12px) saturate(140%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight);
     height:172px;flex-shrink:0;overflow:hidden;cursor:pointer;animation:slide-in-left .32s ease-out both}
-  .ticket:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.09);border-color:var(--line2)}
+  .ticket:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 var(--glass-highlight),0 8px 22px var(--accent-blue-dim);border-color:var(--accent-blue)}
   .ticket:nth-child(1){animation-delay:.02s} .ticket:nth-child(2){animation-delay:.04s}
   .ticket:nth-child(3){animation-delay:.06s} .ticket:nth-child(4){animation-delay:.08s}
   .ticket:nth-child(5){animation-delay:.10s} .ticket:nth-child(6){animation-delay:.12s}
@@ -211,7 +237,9 @@
   .notehint{font-size:11px;color:var(--txt3);margin-top:6px;font-family:var(--mono)}
 
   /* ---------- ADD FORM ---------- */
-  .form{border:1px solid var(--line2);border-radius:9px;background:var(--bg2);padding:11px;display:none;flex-direction:column;gap:8px}
+  .form{border:1px solid var(--glass-border);border-radius:12px;background:var(--glass-bg-strong);
+    backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+    padding:11px;display:none;flex-direction:column;gap:8px}
   .form.open{display:flex}
   .form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .form input,.form select{width:100%;background:var(--panel);border:1px solid var(--line2);
@@ -222,7 +250,9 @@
   .btn-sm{font-family:var(--sans);font-size:12px;font-weight:600;border-radius:9px;padding:7px 14px;cursor:pointer;
     border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--txt2);
     backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
-    box-shadow:inset 0 1px 0 var(--glass-highlight)}
+    box-shadow:inset 0 1px 0 var(--glass-highlight);position:relative;overflow:hidden}
+  .btn-sm::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:9px 9px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none}
   .btn-sm.primary{background:var(--signal);color:#06131f;border-color:var(--signal);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
   .btn-sm:hover{color:var(--txt);background:var(--glass-bg-strong)} .btn-sm.primary:hover{color:#06131f;filter:brightness(1.08)}
@@ -246,7 +276,7 @@
   .uih-table thead th{position:sticky;top:0;z-index:1}
   .uih-body-scroll::-webkit-scrollbar{width:5px;height:5px}
   .uih-body-scroll::-webkit-scrollbar-track{background:var(--bg2)}
-  .uih-body-scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+  .uih-body-scroll::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent-blue),var(--accent-green));border-radius:3px}
 
   .uih-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:860px}
   .uih-table col.c-num{width:32px}
@@ -258,7 +288,7 @@
   .uih-table col.c-down{width:7%}
   .uih-table col.c-circ{width:6%}
   .uih-table col.c-done{width:6%}
-  .uih-table th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+  .uih-table th{background:linear-gradient(135deg,var(--accent-blue-dim),var(--accent-green-dim));backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:nowrap}
   .uih-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;transition:background-color .15s ease}
   .uih-table tr:last-child td{border-bottom:none}
   .uih-table tbody tr{cursor:pointer}
@@ -277,7 +307,7 @@
   .uih-table tr.row-hiding td{animation:row-out .35s ease-out forwards;pointer-events:none}
   @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
   .uih-table tr.row-entering{animation:row-in .3s ease-out both}
-  .all-th{background:var(--bg);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
+  .all-th{background:linear-gradient(135deg,var(--accent-blue-dim),var(--accent-green-dim));backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:nowrap;position:sticky;top:0;z-index:1}
   #ticketsCard tbody tr{height:42px}
   #ticketsCard td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background-color .15s ease}
   #ticketsCard td.note-cell{white-space:normal}
@@ -285,15 +315,19 @@
   #ticketsCard tr:hover td{background:var(--panel2)}
   #ticketsCard tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
   #ticketsCard tr.row-entering{animation:row-in .3s ease-out both}
+  #ticketsCard .pm-body-scroll::-webkit-scrollbar{width:5px;height:5px}
+  #ticketsCard .pm-body-scroll::-webkit-scrollbar-track{background:var(--bg2)}
+  #ticketsCard .pm-body-scroll::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent-blue),var(--accent-green));border-radius:3px}
 
   /* ---------- NOTE POPUP ---------- */
-  .popup-overlay{display:flex;position:fixed;inset:0;z-index:9998;background:rgba(6,10,18,.55);
-    backdrop-filter:blur(2px);align-items:flex-start;justify-content:center;padding:40px 20px;
+  .popup-overlay{display:flex;position:fixed;inset:0;z-index:9998;background:rgba(6,10,18,.4);
+    backdrop-filter:blur(6px) saturate(112%);-webkit-backdrop-filter:blur(6px) saturate(112%);
+    align-items:flex-start;justify-content:center;padding:40px 20px;
     overflow-y:auto;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
   .popup-overlay.open{opacity:1;visibility:visible}
   .popup-box{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;max-width:860px;
     width:100%;margin:auto 0;max-height:90vh;overflow-y:auto;padding:20px 26px;position:relative;
-    backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+    backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);
     box-shadow:0 16px 50px var(--glass-shadow),inset 0 1px 0 var(--glass-highlight),inset 0 0 0 1px rgba(255,255,255,.18);
     transform:scale(.94) translateY(10px);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
   .popup-overlay.open .popup-box{transform:scale(1) translateY(0)}
@@ -301,7 +335,10 @@
   .popup-box p{margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;color:var(--txt);word-break:break-word}
   .popup-box .close{position:absolute;top:12px;right:14px;width:30px;height:30px;display:grid;place-items:center;
     cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;background:var(--glass-bg);border:1px solid var(--glass-border);
-    border-radius:999px;padding:0;backdrop-filter:blur(10px)}
+    border-radius:999px;padding:0;backdrop-filter:blur(10px);overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(41,47,54,.14)}
+  .popup-box .close::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:999px 999px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none}
   .popup-box .close:hover{color:var(--bad);background:var(--glass-bg-strong)}
   html.light .popup-overlay{background:rgba(220,228,240,.7)}
   .popup-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
@@ -313,17 +350,49 @@
   @media(max-width:560px){.popup-detail{grid-template-columns:1fr}}
   #ticketsCard tbody tr{cursor:pointer}
 
-  /* ---------- ACK MODAL ---------- */
-  .popup-box.ack-box{max-width:940px}
-  .ack-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
-  .ack-col{display:flex;flex-direction:column;gap:8px}
-  .ack-col-title{font-size:11px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;
+  /* ---------- ACK / HANDOVER MODAL ---------- */
+  .popup-box.ack-box{max-width:820px;padding:0;overflow:hidden}
+  .modal-head{padding:34px 38px 22px}
+  .modal-icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;margin-bottom:16px;
+    background:linear-gradient(155deg,#42B67A,var(--ok));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 16px rgba(58,122,80,.35)}
+  .modal-icon svg{width:32px;height:32px}
+  .modal-title{font-size:25px;font-weight:700;color:var(--txt);margin:0 0 6px;display:flex;align-items:center;gap:8px}
+  .modal-title .wave{font-size:23px;display:inline-block;animation:wave-hand 1.6s ease-in-out .3s 2}
+  @keyframes wave-hand{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-10deg)}60%{transform:rotate(12deg)}80%{transform:rotate(0)}}
+  .modal-sub{font-size:14px;color:var(--txt3);margin:0}
+  .modal-panel{background:var(--glass-bg-strong);border-top:1px solid var(--glass-border);padding:28px 38px 36px}
+  .modal-label{display:block;font-size:12px;font-weight:600;color:var(--txt);margin-bottom:6px}
+  .modal-input{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:11px;
+    color:var(--txt);font-family:var(--sans);font-size:14px;padding:13px 15px;outline:none;transition:.15s}
+  .modal-input:focus{border-color:var(--ok);box-shadow:0 0 0 3px rgba(58,122,80,.18)}
+  .modal-input::placeholder{color:var(--txt3)}
+  .modal-pass-wrap{position:relative}
+  .modal-pass-wrap .modal-input{padding-right:42px}
+  .modal-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;
+    color:var(--txt3);display:grid;place-items:center;padding:5px;border-radius:6px;transition:.15s}
+  .modal-eye svg{width:18px;height:18px}
+  .modal-eye:hover{color:var(--txt);background:var(--glass-bg)}
+  .modal-error{color:var(--bad);font-size:12px;margin-top:10px;font-family:var(--mono)}
+  .modal-submit{width:100%;background:linear-gradient(135deg,#42B67A,var(--ok));color:#fff;border:0;border-radius:12px;
+    padding:15px;font-size:15px;font-weight:600;cursor:pointer;transition:.15s;font-family:var(--sans);
+    box-shadow:0 6px 16px rgba(58,122,80,.35),inset 0 1px 0 rgba(255,255,255,.3)}
+  .modal-submit:hover{filter:brightness(1.08)}
+  .modal-submit:active{transform:scale(.98)}
+  .ack-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .ack-col{display:flex;flex-direction:column;gap:10px}
+  .ack-col-title{font-size:12px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;
     color:var(--txt3);margin-bottom:2px}
-  .ack-input{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:7px;
-    color:var(--txt);font-family:var(--sans);font-size:12.5px;padding:8px 10px;outline:none}
-  .ack-input:focus{border-color:var(--signal)}
-  .ack-input::placeholder{color:var(--txt3)}
-  .ack-error{color:var(--bad);font-size:12px;margin-top:10px;font-family:var(--mono)}
+  .modal-input.invalid{border-color:var(--bad);box-shadow:0 0 0 3px rgba(164,31,19,.12)}
+  .ack-verify-msg{font-size:11.5px;font-family:var(--mono);min-height:15px;margin-top:2px}
+  .ack-verify-msg.checking{color:var(--txt3)}
+  .ack-verify-msg.ok{color:var(--ok)}
+  .ack-verify-msg.bad{color:var(--bad)}
+  .modal-submit:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.7);box-shadow:none;transform:none}
+  .modal-submit:disabled:hover{filter:grayscale(.7);transform:none}
+  .ack-actions{display:flex;gap:12px;margin-top:24px}
+  .ack-actions .btn-sm{flex:1;font-size:14px;padding:14px}
+  .ack-actions .modal-submit{flex:1.4;margin-top:0}
   @media(max-width:560px){.ack-grid{grid-template-columns:1fr}}
 
 
@@ -340,17 +409,10 @@
     --day:#292F36; --day-dim:#E0DBD8;
     --night:#6B5C9E; --night-dim:#EAE6F8;
     --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
+    --accent-blue:#EF4444; --accent-blue-dim:rgba(239,68,68,.14);
+    --accent-green:#F5B400; --accent-green-dim:rgba(245,180,0,.26);
+    --bg-glow-1:rgba(239,68,68,.22); --bg-glow-2:rgba(245,180,0,.32); --bg-glow-3:rgba(239,68,68,.10);
   }
-  html.light body{background:var(--bg);color:var(--txt)}
-  html.light .logo{border-color:var(--line2)}
-  html.light .toggle button.active[data-shift="day"]{box-shadow:inset 0 0 0 1px #292F36}
-  html.light .toggle button.active[data-shift="night"]{box-shadow:inset 0 0 0 1px #7C3AED}
-  html.light .uih-table th{background:var(--bg2)}
-
-  /* ackbtn */
-  html.light .ackbtn{background:#C7DFA3;border-color:var(--ok);color:var(--ok)}
-  html.light .ackbtn:hover{background:var(--ok);color:#06131f}
-  html.light .ackbtn.done{border-color:var(--ok);color:#06131f;background:var(--ok)}
   html.light .addbtn:hover{background:#EAF1F6}
 
   /* ── Loading overlay ── */
@@ -374,21 +436,19 @@
 
   <header>
     <div class="brand">
-      <div class="logo"><img src="/logo.jpeg" alt="Logo"></div>
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1>Shift Handover Dashboard</h1>
-          <div class="toggle" id="toggle">
-            <button data-shift="day" class="active"><span class="ic">☀️</span> กะกลางวัน</button>
-            <button data-shift="night"><span class="ic">🌙</span> กะกลางคืน</button>
-          </div>
-        </div>
-        <div class="sub">REVENUE DEPARTMENT NOC</div>
-      </div>
+      <button type="button" class="ackbtn" id="ackBtn" title="บันทึกการส่งมอบ-รับมอบงาน">
+        <span class="ic">🤝</span> ส่งมอบ-รับมอบงาน
+      </button>
+      <h1>Shift Handover Dashboard</h1>
     </div>
-    <div class="clock">
-      <div class="t" id="clkT">--:--:--</div>
-      <div class="d" id="clkD">—</div>
+    <div class="header-right">
+      <button type="button" class="shift-label" id="toggle" title="คลิกเพื่อสลับกะ">
+        <span class="ic" id="shiftIc">☀️</span><span class="txt" id="shiftTxt">กะกลางวัน</span>
+      </button>
+      <div class="clock">
+        <div class="t" id="clkT">--:--:--</div>
+        <div class="d" id="clkD">—</div>
+      </div>
     </div>
   </header>
 
@@ -502,7 +562,7 @@
         style="width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
                color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
     </div>
-    <div style="overflow-x:auto;overflow-y:auto;height:238px;scrollbar-gutter:stable">
+    <div class="pm-body-scroll" style="overflow-x:auto;overflow-y:auto;height:238px;scrollbar-gutter:stable">
       <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px">
         <colgroup>
           <col style="width:30px"><col style="width:10%"><col style="width:22%">
@@ -534,25 +594,52 @@
 <div class="popup-overlay" id="ackModal">
   <div class="popup-box ack-box">
     <button class="close" id="ackModalClose">×</button>
-    <h3>บันทึกการส่งมอบ-รับมอบงาน</h3>
-    <div class="ack-grid">
-      <div class="ack-col">
-        <div class="ack-col-title">ผู้ส่งมอบงาน</div>
-        <input class="ack-input" id="ack-from-fname" placeholder="Name">
-        <input class="ack-input" id="ack-from-lname" placeholder="Surname">
-        <input class="ack-input" id="ack-from-email" placeholder="email @pccth.com">
+    <div class="modal-head">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
       </div>
-      <div class="ack-col">
-        <div class="ack-col-title">ผู้รับมอบงาน</div>
-        <input class="ack-input" id="ack-to-fname" placeholder="Name">
-        <input class="ack-input" id="ack-to-lname" placeholder="Surname">
-        <input class="ack-input" id="ack-to-email" placeholder="email @pccth.com">
-      </div>
+      <h3 class="modal-title">ส่งมอบ-รับมอบงาน <span class="wave">🤝</span></h3>
+      <p class="modal-sub">กรอกข้อมูลผู้ส่งมอบและผู้รับมอบงานให้ครบถ้วน</p>
     </div>
-    <div class="ack-error" id="ackError" style="display:none"></div>
-    <div class="frow" style="margin-top:14px">
-      <button class="btn-sm" id="ackCancel">ยกเลิก</button>
-      <button class="btn-sm primary" id="ackConfirm">ยืนยันรับมอบงาน</button>
+    <div class="modal-panel">
+      <div class="ack-grid">
+        <div class="ack-col">
+          <div class="ack-col-title">ผู้ส่งมอบงาน</div>
+          <input class="modal-input" id="ack-from-username" placeholder="Username" autocomplete="off">
+          <div class="modal-pass-wrap">
+            <input class="modal-input" id="ack-from-password" type="password" placeholder="Password" autocomplete="off">
+            <button type="button" class="modal-eye" data-for="ack-from-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <input class="modal-input" id="ack-from-email" placeholder="email @pccth.com" autocomplete="off">
+          <div class="ack-verify-msg" id="ack-from-status"></div>
+        </div>
+        <div class="ack-col">
+          <div class="ack-col-title">ผู้รับมอบงาน</div>
+          <input class="modal-input" id="ack-to-username" placeholder="Username" autocomplete="off">
+          <div class="modal-pass-wrap">
+            <input class="modal-input" id="ack-to-password" type="password" placeholder="Password" autocomplete="off">
+            <button type="button" class="modal-eye" data-for="ack-to-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <input class="modal-input" id="ack-to-email" placeholder="email @pccth.com" autocomplete="off">
+          <div class="ack-verify-msg" id="ack-to-status"></div>
+        </div>
+      </div>
+      <div class="modal-error" id="ackError" style="display:none"></div>
+      <div class="ack-actions">
+        <button class="btn-sm" id="ackCancel">ยกเลิก</button>
+        <button class="modal-submit" id="ackConfirm" disabled>ยืนยันรับมอบงาน</button>
+      </div>
     </div>
   </div>
 </div>
@@ -645,7 +732,9 @@
   function render(){
     // shift dependent labels
     document.getElementById("pmCard").style.display    = "";
-    document.querySelectorAll("#toggle button").forEach(function(b){b.classList.toggle("active",b.dataset.shift===shift);});
+    document.getElementById("toggle").dataset.shift=shift;
+    document.getElementById("shiftIc").textContent=shift==="day"?"☀️":"🌙";
+    document.getElementById("shiftTxt").textContent=shift==="day"?"กะกลางวัน":"กะกลางคืน";
 
     renderKPIs(); renderTickets();
   }
@@ -889,42 +978,109 @@
   }
   applyTheme(shift);
 
-  document.getElementById("toggle").addEventListener("click",function(e){
-    var b=e.target.closest("button"); if(!b)return; shift=b.dataset.shift; applyTheme(shift); render();
+  document.getElementById("toggle").addEventListener("click",function(){
+    shift = shift==="day"?"night":"day"; applyTheme(shift); render();
   });
 
-  /* ---------- handover ack modal ---------- */
-  var COMPANY_EMAIL_DOMAIN="pccth.com";
-  function isCompanyEmail(v){
-    return new RegExp("^[^\\s@]+@"+COMPANY_EMAIL_DOMAIN.replace(/\./g,"\\.")+"$","i").test(v);
+  /* ---------- handover ack modal / employee verification ---------- */
+  var ackVerified={from:false,to:false};
+  var ackVerifyTimers={from:null,to:null};
+  var ackVerifySeq={from:0,to:0};
+  var ackIdentity={from:null,to:null};
+
+  function ackFields(side){return ["username","password","email"].map(function(f){return "ack-"+side+"-"+f;});}
+  function ackSideFilled(side){return ackFields(side).every(function(id){return val(id);});}
+
+  function setAckSideInvalid(side,isInvalid){
+    ackFields(side).forEach(function(id){document.getElementById(id).classList.toggle("invalid",isInvalid);});
   }
-  function openAckModal(){
-    ["ack-from-fname","ack-from-lname","ack-from-email","ack-to-fname","ack-to-lname","ack-to-email"].forEach(function(id){
-      document.getElementById(id).value="";
+  function setAckSideStatus(side,state,msg){
+    var statusEl=document.getElementById("ack-"+side+"-status");
+    statusEl.className="ack-verify-msg"+(state?" "+state:"");
+    statusEl.textContent=msg||"";
+    setAckSideInvalid(side,state==="bad");
+    updateAckConfirmState();
+  }
+  function updateAckConfirmState(){
+    document.getElementById("ackConfirm").disabled=!(ackVerified.from&&ackVerified.to);
+  }
+  function verifyAckSide(side){
+    if(!ackSideFilled(side)){
+      ackVerified[side]=false; ackIdentity[side]=null; setAckSideStatus(side,"",""); return;
+    }
+    var mySeq=++ackVerifySeq[side];
+    setAckSideStatus(side,"checking","กำลังตรวจสอบข้อมูลพนักงาน...");
+    fetch("/api/verify-employee",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        username:val("ack-"+side+"-username"),
+        password:val("ack-"+side+"-password"),
+        email:val("ack-"+side+"-email")
+      })
+    }).then(function(r){return r.json();}).then(function(data){
+      if(mySeq!==ackVerifySeq[side])return; // stale response, a newer check superseded this one
+      ackVerified[side]=!!data.verified;
+      ackIdentity[side]=ackVerified[side]?{firstName:data.first_name||"",lastName:data.last_name||""}:null;
+      setAckSideStatus(side, ackVerified[side]?"ok":"bad",
+        ackVerified[side]?"✓ ยืนยันตัวตนพนักงานแล้ว":"Username, Password หรือ Email ไม่ถูกต้อง");
+    }).catch(function(){
+      if(mySeq!==ackVerifySeq[side])return;
+      ackVerified[side]=false; ackIdentity[side]=null;
+      setAckSideStatus(side,"bad","ตรวจสอบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     });
+  }
+  function scheduleAckVerify(side){
+    ackVerified[side]=false; ackIdentity[side]=null; updateAckConfirmState();
+    clearTimeout(ackVerifyTimers[side]);
+    ackVerifyTimers[side]=setTimeout(function(){verifyAckSide(side);},500);
+  }
+  ["from","to"].forEach(function(side){
+    ackFields(side).forEach(function(id){
+      document.getElementById(id).addEventListener("input",function(){scheduleAckVerify(side);});
+    });
+  });
+  var EYE_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M9.9 5.2A11 11 0 0 1 12 5c7 0 11 7 11 7a13.3 13.3 0 0 1-3.1 3.8M6.6 6.6A13.6 13.6 0 0 0 1.5 12s4 7 10.5 7a10.6 10.6 0 0 0 3.4-.6"/></svg>';
+  document.querySelectorAll(".modal-eye").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var inp=document.getElementById(btn.dataset.for);
+      var showing=inp.type==="text";
+      inp.type=showing?"password":"text";
+      btn.innerHTML=showing?EYE_ICON:EYE_OFF_ICON;
+    });
+  });
+
+  function openAckModal(){
+    ["ack-from-username","ack-from-password","ack-from-email","ack-to-username","ack-to-password","ack-to-email"].forEach(function(id){
+      var el=document.getElementById(id);
+      el.value=""; el.classList.remove("invalid");
+    });
+    ["ack-from-password","ack-to-password"].forEach(function(id){document.getElementById(id).type="password";});
+    document.querySelectorAll(".modal-eye").forEach(function(btn){btn.innerHTML=EYE_ICON;});
+    ["from","to"].forEach(function(side){
+      clearTimeout(ackVerifyTimers[side]);
+      ackVerified[side]=false; ackIdentity[side]=null;
+      document.getElementById("ack-"+side+"-status").textContent="";
+      document.getElementById("ack-"+side+"-status").className="ack-verify-msg";
+    });
+    updateAckConfirmState();
     document.getElementById("ackError").style.display="none";
     document.getElementById("ackModal").classList.add("open");
   }
   function closeAckModal(){document.getElementById("ackModal").classList.remove("open");}
+  document.getElementById("ackBtn").addEventListener("click",openAckModal);
   document.getElementById("ackModalClose").addEventListener("click",closeAckModal);
   document.getElementById("ackCancel").addEventListener("click",closeAckModal);
   document.getElementById("ackModal").addEventListener("click",function(e){
     if(e.target.id==="ackModal")closeAckModal();
   });
   document.getElementById("ackConfirm").addEventListener("click",function(){
-    var fFn=val("ack-from-fname"),fLn=val("ack-from-lname"),fEmail=val("ack-from-email");
-    var tFn=val("ack-to-fname"),tLn=val("ack-to-lname"),tEmail=val("ack-to-email");
-    var err=document.getElementById("ackError");
-    if(!fFn||!fLn||!fEmail||!tFn||!tLn||!tEmail){
-      err.textContent="กรุณากรอกข้อมูลให้ครบทุกช่อง"; err.style.display="block"; return;
-    }
-    if(!isCompanyEmail(fEmail)||!isCompanyEmail(tEmail)){
-      err.textContent="อีเมลต้องเป็นอีเมลบริษัท (@"+COMPANY_EMAIL_DOMAIN+")"; err.style.display="block"; return;
-    }
+    if(!ackVerified.from||!ackVerified.to||!ackIdentity.from||!ackIdentity.to)return;
+    var fEmail=val("ack-from-email"), tEmail=val("ack-to-email");
     var d=new Date();
     state.ack[shift]={
-      fromName:fFn+" "+fLn, fromEmail:fEmail,
-      toName:tFn+" "+tLn, toEmail:tEmail,
+      fromName:ackIdentity.from.firstName+" "+ackIdentity.from.lastName, fromEmail:fEmail,
+      toName:ackIdentity.to.firstName+" "+ackIdentity.to.lastName, toEmail:tEmail,
       at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})
     };
     save();render();

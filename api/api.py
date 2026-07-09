@@ -40,6 +40,9 @@ collection = db['schedules']
 helpdesk_db = client[os.getenv('HELPDESK_MONGO_DB', 'helpdesk_db')]
 tickets_collection = helpdesk_db['tickets']
 
+employee_db = client[os.getenv('EMPLOYEE_MONGO_DB', 'pccrd_employee_db')]
+employees_collection = employee_db['employees']
+
 app = FastAPI()
 
 
@@ -129,3 +132,29 @@ def update_ticket(ticket_id: str, body: TicketUpdate):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
     return {"ok": True}
+
+
+class EmployeeVerifyRequest(BaseModel):
+    username: str
+    password: str
+    email: str
+
+
+@app.post("/api/verify-employee")
+def verify_employee(body: EmployeeVerifyRequest):
+    username = body.username.strip()
+    password = body.password
+    email = body.email.strip().lower()
+    if not username or not password or not email:
+        return {"verified": False}
+    emp = employees_collection.find_one({"username": username})
+    verified = bool(emp) \
+        and emp.get("password", "") == password \
+        and emp.get("email", "").strip().lower() == email
+    if not verified:
+        return {"verified": False}
+    return {
+        "verified": True,
+        "first_name": emp.get("first_name", ""),
+        "last_name": emp.get("last_name", ""),
+    }
