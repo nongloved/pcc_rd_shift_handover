@@ -155,10 +155,10 @@ def extract_pdf_to_json(pdf_bytes, filename, mail_received_at=None):
                 for row_idx, (row_data, row_obj) in enumerate(zip(rows_text, table.rows)):
                     if not row_data or len(row_data) < 4:
                         continue
-                    no_  = (row_data[0] or '').strip()
-                    sid  = (row_data[1] or '').strip()
-                    cid  = (row_data[2] or '').strip()
-                    if not (no_.isdigit() and re.match(r'^\d{5,}$', sid) and re.match(r'^\d{5,}$', cid)):
+                    row_no = (row_data[0] or '').strip()
+                    sid    = (row_data[1] or '').strip()
+                    cid    = (row_data[2] or '').strip()
+                    if not (row_no.isdigit() and re.match(r'^\d{5,}$', sid) and re.match(r'^\d{5,}$', cid)):
                         continue
 
                     name = ''

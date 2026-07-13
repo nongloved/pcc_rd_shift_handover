@@ -412,7 +412,7 @@
     document.getElementById("capoLoader").style.display="flex";
     var delay=new Promise(function(r){setTimeout(r,1000);});
     try{
-      var res=await fetch("/api/uih-tickets");
+      var res=await fetch("/api/ma-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
       var raw=await res.json();
       all=raw.filter(function(t){

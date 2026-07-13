@@ -379,7 +379,7 @@
   async function toggleDone(id, btn){
     var nowDone=!btn.classList.contains("is-done");
     try{
-      var res=await fetch("/api/uih-record/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      var res=await fetch("/api/uih-mails/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
       if(!res.ok)throw new Error("HTTP "+res.status);
       document.querySelectorAll("button[onclick*=\"'"+id+"'\"]").forEach(function(b){
         if(b.classList.contains("done-btn")){
@@ -552,7 +552,7 @@
       status:document.getElementById("e-status").value.trim()||null,
     };
     try{
-      var res=await fetch("/api/uih-record/"+editingId,{
+      var res=await fetch("/api/uih-mails/"+editingId,{
         method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)
       });
       if(!res.ok)throw new Error("HTTP "+res.status);
@@ -576,7 +576,7 @@
     if(!confirm("Delete this record?"))return;
     btn.disabled=true;
     try{
-      var res=await fetch("/api/uih-record/"+id,{method:"DELETE"});
+      var res=await fetch("/api/uih-mails/"+id,{method:"DELETE"});
       if(!res.ok)throw new Error("HTTP "+res.status);
       all=all.filter(function(x){return x._id!==id;});
       applyFilter();
@@ -658,7 +658,7 @@
     document.getElementById("capoLoader").style.display="flex";
     var delay=new Promise(function(r){setTimeout(r,1000);});
     try{
-      var res=await fetch("/api/uih-all");
+      var res=await fetch("/api/uih-mails");
       if(!res.ok)throw new Error("HTTP "+res.status);
       all=await res.json();
       document.getElementById("metaLine").textContent=

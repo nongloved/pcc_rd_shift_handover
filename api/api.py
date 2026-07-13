@@ -1,10 +1,13 @@
 import os
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from bson import ObjectId
 from pydantic import BaseModel
+
+BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
 
 
 def _build_mongo_uri():
@@ -51,13 +54,13 @@ def serialize(doc):
     return doc
 
 
-@app.get("/api/records")
-def get_records():
+@app.get("/api/uih-mails")
+def get_uih_mails():
     records = list(collection.find().sort("processed_at", -1))
     return [serialize(r) for r in records]
 
 
-class RecordUpdate(BaseModel):
+class UihMailUpdate(BaseModel):
     purpose: Optional[str] = None
     working_area: Optional[str] = None
     start_completion_time: Optional[str] = None
@@ -66,8 +69,8 @@ class RecordUpdate(BaseModel):
     done: Optional[bool] = None
 
 
-@app.get("/api/daily")
-def get_daily_records():
+@app.get("/api/uih-mails/daily")
+def get_uih_mails_daily():
     today = datetime.now().date()
     records = list(collection.find().sort("processed_at", -1))
     daily = []
@@ -82,14 +85,8 @@ def get_daily_records():
     return [serialize(r) for r in daily]
 
 
-@app.delete("/api/records/all")
-def delete_all_records():
-    result = collection.delete_many({})
-    return {"deleted": result.deleted_count}
-
-
-@app.put("/api/records/{record_id}")
-def update_record(record_id: str, body: RecordUpdate):
+@app.put("/api/uih-mails/{record_id}")
+def update_uih_mail(record_id: str, body: UihMailUpdate):
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -102,26 +99,48 @@ def update_record(record_id: str, body: RecordUpdate):
     return {"ok": True}
 
 
-@app.delete("/api/records/{record_id}")
-def delete_record(record_id: str):
+@app.delete("/api/uih-mails/{record_id}")
+def delete_uih_mail(record_id: str):
     result = collection.delete_one({"_id": ObjectId(record_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Record not found")
     return {"ok": True}
 
 
-@app.get("/api/tickets")
-def get_tickets():
+@app.get("/api/ma-tickets")
+def get_ma_tickets():
     tickets = list(tickets_collection.find().sort("ticket_id", -1))
     return [serialize(t) for t in tickets]
 
 
-class TicketUpdate(BaseModel):
+def _is_reported_today(report_date):
+    if not report_date:
+        return False
+    try:
+        dt = datetime.fromisoformat(str(report_date).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+    return dt.astimezone(BANGKOK_TZ).date() == datetime.now(BANGKOK_TZ).date()
+
+
+@app.get("/api/ma-pm-tickets")
+def get_ma_pm_tickets():
+    tickets = list(tickets_collection.find().sort("ticket_id", -1))
+    pm_today = [
+        t for t in tickets
+        if t.get("request_type") == "Preventive Maintenance Plan" and _is_reported_today(t.get("report_date"))
+    ]
+    return [serialize(t) for t in pm_today]
+
+
+class MaTicketUpdate(BaseModel):
     done: Optional[bool] = None
 
 
-@app.put("/api/tickets/{ticket_id}")
-def update_ticket(ticket_id: str, body: TicketUpdate):
+@app.put("/api/ma-tickets/{ticket_id}")
+def update_ma_ticket(ticket_id: str, body: MaTicketUpdate):
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")

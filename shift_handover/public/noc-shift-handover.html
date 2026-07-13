@@ -554,11 +554,11 @@
       <div style="display:flex;align-items:center;gap:8px">
         <span class="count" id="ticketsCount">0</span>
         <a href="/tickets" id="moreTicketsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
-        <button id="refreshTicketsBtn" class="btn-sm" onclick="loadTickets()" style="padding:3px 9px;font-size:11px">↻</button>
+        <button id="refreshTicketsBtn" class="btn-sm" onclick="loadPmTicketsToday()" style="padding:3px 9px;font-size:11px">↻</button>
       </div>
     </div>
     <div style="padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg2)">
-      <input id="ticketsSearch" type="text" placeholder="Search…" oninput="filterTickets()"
+      <input id="ticketsSearch" type="text" placeholder="Search…" oninput="filterPmTicketsToday()"
         style="width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:6px;
                color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
     </div>
@@ -705,13 +705,6 @@
     if(m)return parseInt(m[1])+" hr(s)";
     return str;
   }
-  function isReportedToday(reportDate){
-    if(!reportDate)return false;
-    var d=new Date(reportDate);
-    if(isNaN(d))return false;
-    var opts={timeZone:"Asia/Bangkok"};
-    return d.toLocaleDateString("en-CA",opts)===new Date().toLocaleDateString("en-CA",opts);
-  }
   function formatUpdatedAt(dateStr){
     if(!dateStr)return null;
     var d=new Date(dateStr);
@@ -740,8 +733,8 @@
   }
 
   function renderKPIs(){
-    var right = {n:uihRecords.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"};
-    var ma = {n:tickets.length, l:"งาน PM ทั้งหมด - MA", cls:"k-ma"};
+    var uih = {n:uihRecords.length, l:"งาน PM ทั้งหมด - UIH", cls:"k-pm"};
+    var ma = {n:pmTicketsToday.length, l:"งาน PM ทั้งหมด - MA", cls:"k-ma"};
     function kpiHTML(k){return '<div class="kpi '+k.cls+'"><div class="bar"></div><div class="n">'+k.n+'</div><div class="l">'+k.l+'</div></div>';}
     var priCount=function(p){return state.tickets.filter(function(t){return t.pri===p;}).length;};
     var priData=[
@@ -752,7 +745,7 @@
       {cls:"k-pri-scheduled",n:priCount("Scheduled"),l:"Scheduled"}
     ];
     document.getElementById("kpisPri").innerHTML = priData.map(kpiHTML).join("");
-    document.getElementById("kpisPm").innerHTML = [ma,right].map(kpiHTML).join("");
+    document.getElementById("kpisPm").innerHTML = [ma,uih].map(kpiHTML).join("");
   }
 
   function populateReqTypeFilter(){
@@ -842,7 +835,7 @@
   }
   async function loadPendingTickets(){
     try{
-      var res=await fetch("/api/uih-tickets");
+      var res=await fetch("/api/ma-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
       var raw=await res.json();
       var live=raw.filter(function(t){return t.status!=="Resolved";}).map(mapTicketFromHelpdesk);
@@ -911,7 +904,7 @@
   async function toggleDone(id, btn){
     var nowDone=!btn.classList.contains("is-done");
     try{
-      var res=await fetch("/api/uih-record/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
+      var res=await fetch("/api/uih-mails/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:nowDone})});
       if(!res.ok)throw new Error("HTTP "+res.status);
       var rec=uihRecords.find(function(r){return r._id===id;});
       if(rec)rec.done=nowDone;
@@ -954,7 +947,7 @@
     showLoader();
     var delay=new Promise(function(r){setTimeout(r,1000);});
     try{
-      var res=await fetch("/api/uih-daily");
+      var res=await fetch("/api/uih-mails/daily");
       if(!res.ok)throw new Error("HTTP "+res.status);
       uihRecords=await res.json();
     }catch(e){
@@ -1182,7 +1175,7 @@
 
   setInterval(loadUIHDaily, 60000);
   setInterval(loadPendingTickets, 60000);
-  setInterval(loadTickets, 60000);
+  setInterval(loadPmTicketsToday, 60000);
 
   /* ---------- clock ---------- */
   function tick(){
@@ -1193,27 +1186,27 @@
   setInterval(tick,1000); tick();
   setInterval(renderKPIs,30000); // refresh SLA chips
 
-  /* ---------- tickets CRUD ---------- */
-  var tickets=[];
+  /* ---------- PM Tickets วันนี้ (today's PM-plan tickets from MA/Helpdesk) ---------- */
+  var pmTicketsToday=[];
 
   function ticketText(t){
     var parts=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.note,t.due_date,t.detail];
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
-  function filterTickets(){
+  function filterPmTicketsToday(){
     var q=(document.getElementById("ticketsSearch").value||"").toLowerCase().trim();
-    var filtered=tickets.filter(function(t){
+    var filtered=pmTicketsToday.filter(function(t){
       if(q&&ticketText(t).indexOf(q)<0)return false;
       return true;
     });
-    renderTicketsTable(filtered);
+    renderPmTicketsTodayTable(filtered);
   }
 
-  function renderTicketsTable(records){
+  function renderPmTicketsTodayTable(records){
     var tb=document.getElementById("ticketsTableBody");
-    var total=tickets.length;
-    var doneCount=tickets.filter(function(t){return t.done;}).length;
+    var total=pmTicketsToday.length;
+    var doneCount=pmTicketsToday.filter(function(t){return t.done;}).length;
     document.getElementById("ticketsCount").textContent=records.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
     if(!records.length){
       tb.innerHTML='<tr><td colspan="7" class="empty" style="padding:20px">No tickets.</td></tr>';
@@ -1237,19 +1230,16 @@
 
   document.getElementById("ticketsTableBody").addEventListener("click",function(e){
     var tr=e.target.closest("tr[data-tid]"); if(!tr)return;
-    var t=tickets.find(function(x){return x._id===tr.dataset.tid;}); if(!t)return;
+    var t=pmTicketsToday.find(function(x){return x._id===tr.dataset.tid;}); if(!t)return;
     openTicketDetailPopup(t);
   });
 
-  async function loadTickets(){
+  async function loadPmTicketsToday(){
     try{
-      var res=await fetch("/api/uih-tickets");
+      var res=await fetch("/api/ma-pm-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
-      var all=await res.json();
-      tickets=all.filter(function(t){
-        return t.request_type==="Preventive Maintenance Plan" && isReportedToday(t.report_date);
-      });
-      filterTickets();
+      pmTicketsToday=await res.json();
+      filterPmTicketsToday();
       renderKPIs();
     }catch(e){
       document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="7" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
@@ -1262,12 +1252,12 @@
     if(saved && saved.tickets){ state=saved; if(!state.ack)state.ack={day:null,night:null}; if(!state.notes)state.notes={day:"",night:""}; }
     render();
     loadUIHDaily();
-    loadTickets();
+    loadPmTicketsToday();
     loadPendingTickets();
     window.filterUIHTable=filterUIHTable;
     window.toggleDone=toggleDone;
-    window.filterTickets=filterTickets;
-    window.loadTickets=loadTickets;
+    window.filterPmTicketsToday=filterPmTicketsToday;
+    window.loadPmTicketsToday=loadPmTicketsToday;
     window.loadPendingTickets=loadPendingTickets;
   })();
 })();

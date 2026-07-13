@@ -68,21 +68,22 @@ function proxyMutate(method, apiPath, body, res) {
   req.end();
 }
 
-app.get('/api/uih-daily', (req, res) => proxyGet('/api/daily', res));
-app.get('/api/uih-all',   (req, res) => proxyGet('/api/records', res));
+app.get('/api/uih-mails',       (req, res) => proxyGet('/api/uih-mails', res));
+app.get('/api/uih-mails/daily', (req, res) => proxyGet('/api/uih-mails/daily', res));
 
-app.put('/api/uih-record/:id', (req, res) => {
-  proxyMutate('PUT', `/api/records/${req.params.id}`, req.body, res);
+app.put('/api/uih-mails/:id', (req, res) => {
+  proxyMutate('PUT', `/api/uih-mails/${req.params.id}`, req.body, res);
 });
 
-app.delete('/api/uih-record/:id', (req, res) => {
-  proxyMutate('DELETE', `/api/records/${req.params.id}`, null, res);
+app.delete('/api/uih-mails/:id', (req, res) => {
+  proxyMutate('DELETE', `/api/uih-mails/${req.params.id}`, null, res);
 });
 
-app.get('/api/uih-tickets', (req, res) => proxyGet('/api/tickets', res));
+app.get('/api/ma-tickets',    (req, res) => proxyGet('/api/ma-tickets', res));
+app.get('/api/ma-pm-tickets', (req, res) => proxyGet('/api/ma-pm-tickets', res));
 
-app.put('/api/uih-ticket/:id', (req, res) => {
-  proxyMutate('PUT', `/api/tickets/${req.params.id}`, req.body, res);
+app.put('/api/ma-tickets/:id', (req, res) => {
+  proxyMutate('PUT', `/api/ma-tickets/${req.params.id}`, req.body, res);
 });
 
 app.post('/api/verify-employee', (req, res) => {
