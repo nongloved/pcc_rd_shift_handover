@@ -100,8 +100,9 @@
   col.c-start   {width:9%}
   col.c-end     {width:9%}
   col.c-down    {width:6%}
-  col.c-circ    {width:13%}
-  col.c-impacted{width:15%}
+  col.c-circ    {width:11%}
+  col.c-impacted{width:13%}
+  col.c-sent    {width:9%}
   col.c-date    {width:9%}
   col.c-done    {width:5%}
   col.c-action  {width:8%}
@@ -276,17 +277,17 @@
         <colgroup>
           <col class="c-done"><col class="c-num"><col class="c-purpose"><col class="c-area">
           <col class="c-impacted"><col class="c-start"><col class="c-end"><col class="c-down">
-          <col class="c-circ"><col class="c-date"><col class="c-action">
+          <col class="c-circ"><col class="c-sent"><col class="c-date"><col class="c-action">
         </colgroup>
         <thead>
           <tr>
             <th>Done</th><th>#</th><th>Purpose</th><th>Location</th>
             <th>Impacted Location</th><th>Start Time</th><th>Completion</th><th>Downtime</th>
-            <th>Circuit</th><th>Received At</th><th>Action</th>
+            <th>Circuit</th><th>Mail Arrived At</th><th>Received At</th><th>Action</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="11" class="empty">Loading…</td></tr>
+          <tr><td colspan="12" class="empty">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -400,7 +401,7 @@
     var tb=document.getElementById("tbody");
     document.getElementById("countLabel").textContent=records.length+" / "+all.length+" records";
     if(!records.length){
-      tb.innerHTML='<tr><td colspan="11" class="empty">No records found.</td></tr>';
+      tb.innerHTML='<tr><td colspan="12" class="empty">No records found.</td></tr>';
       return;
     }
     var rows=[];
@@ -417,6 +418,7 @@
         +'<td class="timecol">'+esc(formatTHT(st[0]))+'</td>'
         +'<td class="timecol">'+esc(formatTHT(st[1]))+'</td>'
         +'<td class="downcol">'+esc(formatDowntime(r.downtime_per_circuit))+'</td>';
+      var sentCell='<td class="datecol">'+esc(formatDate(r.mail_received_at))+'</td>';
       var dateCell='<td class="datecol">'+esc(formatDate(r.processed_at))+'</td>';
       var doneCell='<td><button class="done-btn'+(isDone?' is-done':'')+'" onclick="toggleDone(\''+r._id+'\',this)">'+(isDone?'✓ Done':'Done')+'</button></td>';
       var dis=isDone?' disabled':'';
@@ -433,7 +435,7 @@
           +'<td class="num">'+rowNum+'</td>'
           +sharedLeft+'<td>—</td>'+sharedRight
           +'<td>—</td>'
-          +dateCell+actions+'</tr>');
+          +sentCell+dateCell+actions+'</tr>');
       } else {
         circuits.forEach(function(c,ci){
           rowNum++;
@@ -447,7 +449,7 @@
           rows.push('<tr class="'+trClass+'" data-rid="'+r._id+'" '+delay+'>'
             +doneCell
             +'<td class="num">'+rowNum+'</td>'
-            +sharedLeft+impCell+sharedRight+circuitCell+dateCell+actions+'</tr>');
+            +sharedLeft+impCell+sharedRight+circuitCell+sentCell+dateCell+actions+'</tr>');
         });
       }
     });
@@ -493,6 +495,7 @@
       ["Completion Time", formatTHT(st[1])],
       ["Downtime", formatDowntime(r.downtime_per_circuit)],
       ["Status", r.status||"—"],
+      ["Mail Arrived At", formatDate(r.mail_received_at)],
       ["Received At", formatDate(r.processed_at)]
     ];
     document.getElementById("detailPopupBody").innerHTML='<div class="popup-detail">'+fields.map(function(f){
@@ -601,12 +604,12 @@
     return s;
   }
   function toCSV(records){
-    var headers=["Purpose","Working Area","Start Time","Completion Time","Downtime","Status","Circuits","Received At","Done"];
+    var headers=["Purpose","Working Area","Start Time","Completion Time","Downtime","Status","Circuits","Mail Arrived At","Received At","Done"];
     var lines=[headers.join(",")];
     records.forEach(function(r){
       var circuits=(r.affected_circuits||[]).map(function(c){return (c.cid||"")+" "+(c.circuit_name||"");}).join("; ");
       var st=splitTime(r.start_completion_time||"");
-      var row=[r.purpose,r.working_area,st[0],st[1],r.downtime_per_circuit,r.status,circuits,r.processed_at,r.done?"Yes":"No"];
+      var row=[r.purpose,r.working_area,st[0],st[1],r.downtime_per_circuit,r.status,circuits,r.mail_received_at,r.processed_at,r.done?"Yes":"No"];
       lines.push(row.map(csvEscape).join(","));
     });
     return lines.join("\r\n");
@@ -665,7 +668,7 @@
     }catch(e){
       await delay;
       document.getElementById("tbody").innerHTML=
-        '<tr><td colspan="11" class="empty" style="color:var(--bad)">Cannot reach UIH API: '+esc(e.message)+'</td></tr>';
+        '<tr><td colspan="12" class="empty" style="color:var(--bad)">Cannot reach UIH API: '+esc(e.message)+'</td></tr>';
       document.getElementById("metaLine").textContent="Error loading data";
     }
     document.getElementById("capoLoader").style.display="none";

@@ -4,6 +4,7 @@ import time
 import imaplib
 import email
 from email.header import decode_header
+from email.utils import parsedate_to_datetime
 import re
 import json
 import pdfplumber
@@ -65,10 +66,17 @@ def decode_subject(raw_subject):
     return result
 
 
+def imap_quote(folder_name):
+    """IMAP mailbox names containing spaces (or other specials) must be quoted —
+    imaplib does not do this automatically."""
+    escaped = folder_name.replace('\\', '\\\\').replace('"', '\\"')
+    return f'"{escaped}"'
+
+
 def ensure_imap_folder(imap, folder_name):
-    status, _ = imap.select(folder_name)
+    status, _ = imap.select(imap_quote(folder_name))
     if status != 'OK':
-        imap.create(folder_name)
+        imap.create(imap_quote(folder_name))
         print(f"  Created IMAP folder: {folder_name}")
 
 
@@ -80,7 +88,7 @@ def extract_field(text, *patterns):
     return "N/A"
 
 
-def extract_pdf_to_json(pdf_bytes, filename):
+def extract_pdf_to_json(pdf_bytes, filename, mail_received_at=None):
     import pytesseract
     from pdf2image import convert_from_bytes
 
@@ -179,13 +187,14 @@ def extract_pdf_to_json(pdf_bytes, filename):
         "affected_circuits": circuits,
         "status": "Pending Calendar Sync",
         "done": False,
+        "mail_received_at": mail_received_at,
         "processed_at": datetime.now().isoformat()
     }
 
 
 def process_folder(imap, folder):
 
-    status, _ = imap.select(folder)
+    status, _ = imap.select(imap_quote(folder))
     if status != 'OK':
         print(f"  [WARN] Cannot select folder: {folder}")
         return
@@ -203,7 +212,7 @@ def process_folder(imap, folder):
     print(f"  [{folder}] Found {len(all_uids)} email(s) in last 7 days")
 
     for uid in all_uids:
-        _, msg_data = imap.uid('fetch', str(uid), '(RFC822)')
+        _, msg_data = imap.uid('fetch', str(uid), '(INTERNALDATE RFC822)')
         msg = email.message_from_bytes(msg_data[0][1])
         subject = decode_subject(msg.get('Subject', ''))
         print(f"\n  Email: {subject}")
@@ -211,6 +220,16 @@ def process_folder(imap, folder):
         if 'Maintenance/RD' not in subject:
             print("  skip: subject does not contain 'Maintenance/RD'")
             continue
+
+        # INTERNALDATE is stamped by the mail server itself when the message arrived —
+        # unlike the Date: header, it can't be set/skewed by the sending client.
+        mail_received_at = None
+        internaldate_match = re.search(rb'INTERNALDATE "([^"]+)"', msg_data[0][0])
+        if internaldate_match:
+            try:
+                mail_received_at = parsedate_to_datetime(internaldate_match.group(1).decode()).isoformat()
+            except (TypeError, ValueError):
+                mail_received_at = None
 
         for part in msg.walk():
             attachment_name = part.get_filename()
@@ -233,7 +252,7 @@ def process_folder(imap, folder):
                 continue
 
             try:
-                json_data = extract_pdf_to_json(pdf_bytes, attachment_name)
+                json_data = extract_pdf_to_json(pdf_bytes, attachment_name, mail_received_at)
 
                 print(f"  Extract OK!")
                 print(f"     Purpose       : {json_data['purpose']}")
@@ -257,7 +276,7 @@ def process_folder(imap, folder):
                 traceback.print_exc()
 
         if folder != IMAP_PROCESSED_FOLDER:
-            imap.uid('copy', str(uid), IMAP_PROCESSED_FOLDER)
+            imap.uid('copy', str(uid), imap_quote(IMAP_PROCESSED_FOLDER))
 
 
 def monitor_email():
