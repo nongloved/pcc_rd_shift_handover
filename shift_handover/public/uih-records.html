@@ -38,8 +38,8 @@
     padding:14px 18px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:14px;
     backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
     box-shadow:inset 0 1px 0 var(--glass-highlight),0 8px 28px var(--glass-shadow);
-    position:relative;overflow:hidden}
-  header::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    position:relative;z-index:5}
+  header::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:16px 16px 0 0;
     background:linear-gradient(90deg,var(--accent-blue),var(--accent-green));opacity:.7}
   .back{font-family:var(--sans);font-size:13px;font-weight:600;color:#3E2723;
     background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:9px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s;
@@ -622,11 +622,17 @@
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
+  function bangkokStamp(){
+    var parts={};
+    new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
+      .formatToParts(new Date()).forEach(function(p){parts[p.type]=p.value;});
+    return parts.year+"-"+parts.month+"-"+parts.day+"-"+parts.hour+"-"+parts.minute+"-"+parts.second;
+  }
   function exportRecords(format,scope){
     var records=scope==="filtered"?currentFiltered:all;
     if(!records.length){alert("No records to export.");return;}
     document.getElementById("exportMenu").classList.remove("open");
-    var stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+    var stamp=bangkokStamp();
     var tag=scope==="filtered"?"uih-records-filtered-":"uih-records-";
     if(format==="json"){
       downloadBlob(JSON.stringify(records,null,2),tag+stamp+".json","application/json");
