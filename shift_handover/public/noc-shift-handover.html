@@ -200,10 +200,11 @@
   .tid{font-family:var(--mono);font-size:12px;color:var(--txt2)}
   .ticket .title{font-weight:600;font-size:13.5px}
   .ticket .meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11.5px;color:var(--txt2)}
-  .ticket .meta b{color:var(--txt);font-weight:500}
+  .ticket .meta b{color:var(--txt);font-weight:700}
   .ticket .meta .mono{font-family:var(--mono)}
-  .ticket .act{font-size:12px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px}
-  .ticket .act b{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+  .ticket .act{font-size:12.5px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px}
+  .ticket .act .lbl{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+  .ticket .act b{color:var(--txt);font-weight:700}
   .sla{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;
     display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px}
   .sla.ok{background:#d1fae5;color:#3D7A5C}
@@ -825,7 +826,7 @@
         +'<div class="title">'+esc(t.title)+'</div>'
         +'<div class="meta"><span>ประเภทงาน <b class="mono">'+esc(t.reqtype)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span>'
           +(upd?'<span class="pill upd">🕓 '+esc(upd)+'</span>':'')+'</div>'
-        +'<div class="act"><b>หมายเหตุ · </b>'+esc(note.text)+(note.trunc?' <span class="more" data-more="note">...more</span>':'')+'</div>'
+        +'<div class="act"><span class="lbl">หมายเหตุ · </span><b>'+esc(note.text)+'</b>'+(note.trunc?' <span class="more" data-more="note">...more</span>':'')+'</div>'
       +'</div>';
     }).join("");
   }
