@@ -98,6 +98,10 @@ app.get('/tickets', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'all-tickets.html'));
 });
 
+app.get('/pending-tickets', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pending-tickets.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'noc-shift-handover.html'));
 });

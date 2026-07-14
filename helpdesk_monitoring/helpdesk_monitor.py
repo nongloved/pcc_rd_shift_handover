@@ -15,15 +15,25 @@ HELPDESK_USER = os.getenv('HELPDESK_USER', '')
 HELPDESK_PASS = os.getenv('HELPDESK_PASS', '')
 TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets"
 
-# Statuses that mean the ticket is no longer open. WebHelpDesk tracks "Closed" and
-# "Resolved" as separate terminal statuses — a qualifier excluding only one of them
-# still lets the other flood in from every department, not just this team's queue.
-CLOSED_STATUSES = {"Closed", "Resolved"}
-OPEN_QUALIFIER = " and ".join(
-    f"statustype.statusTypeName != '{s}'" for s in CLOSED_STATUSES
-)
+# Only tickets in one of these statuses are synced — a whitelist instead of a
+# blacklist, so any status we haven't explicitly vetted (Rejected, Pending Change,
+# or anything WebHelpDesk adds later) is excluded by default rather than leaking
+# through unnoticed. "Closed" is deliberately excluded despite being a valid status:
+# it's a large, effectively-static historical archive (hundreds+ tickets going back
+# years) that would make each poll take 1-2+ minutes for no operational benefit,
+# since closed tickets never change — that's especially costly now that polls run
+# every minute.
+TRACKED_STATUSES = {"Open", "Assigned", "Pending Customer", "Pending Vendor", "Resolved"}
 
-POLL_INTERVAL_SEC = 15 * 60
+# Individual tickets manually confirmed stale/invalid despite an active-looking
+# status — excluded one-off rather than blacklisting the whole status, since most
+# tickets in that status are legitimate.
+# 110631, 111598: "Pending Vendor" for 5 months with zero movement.
+# 131377: "[TEST-LINEOA]" test ticket, note field has test@example.com — not a
+#   real incident.
+MANUALLY_EXCLUDED_TICKET_IDS = {110631, 111598, 131377}
+
+POLL_INTERVAL_SEC = 60
 
 
 def _build_mongo_uri():
@@ -58,17 +68,20 @@ db = client[HELPDESK_MONGO_DB]
 tickets_collection = db['tickets']
 
 
-def fetch_group_tickets():
-    """Page through all open tickets org-wide (not scoped to this account's group),
-    already full-detail via style=details, until an empty page."""
+def _fetch_tickets_by_status(status):
+    """Page through all tickets in a single status until an empty page. A single
+    equality qualifier paginates reliably; a combined multi-status OR qualifier was
+    observed to make WebHelpDesk's pagination stall/loop without converging, so each
+    status is fetched as its own request instead of one big compound qualifier."""
     tickets = []
     page = 1
+    qualifier = f"statustype.statusTypeName = '{status}'"
     while True:
         resp = requests.get(
             TICKETS_BASE_URL,
             params={
                 "username": HELPDESK_USER, "password": HELPDESK_PASS,
-                "style": "details", "page": page, "qualifier": OPEN_QUALIFIER
+                "style": "details", "page": page, "qualifier": qualifier
             },
             verify=False,
             timeout=15
@@ -79,6 +92,17 @@ def fetch_group_tickets():
             break
         tickets.extend(batch)
         page += 1
+    return tickets
+
+
+def fetch_group_tickets():
+    """Fetch all tickets across every tracked status, org-wide (not scoped to this
+    account's group), already full-detail via style=details."""
+    tickets = []
+    for status in TRACKED_STATUSES:
+        batch = _fetch_tickets_by_status(status)
+        print(f"  Fetched {len(batch)} ticket(s) with status '{status}'")
+        tickets.extend(batch)
     return tickets
 
 
@@ -123,10 +147,12 @@ def extract_ticket_fields(raw):
     }
 
 
-def is_not_resolved(raw):
-    """Exclude tickets whose status is terminal (Closed/Resolved) — everything else is allowed through."""
+def is_tracked_status(raw):
+    """Keep only tickets in a tracked status, minus any manually flagged as stale."""
+    if raw.get('id') in MANUALLY_EXCLUDED_TICKET_IDS:
+        return False
     status = (raw.get('statustype') or {}).get('statusTypeName') or ''
-    return status not in CLOSED_STATUSES
+    return status in TRACKED_STATUSES
 
 
 def poll_new_tickets():
@@ -139,7 +165,7 @@ def poll_new_tickets():
     for raw in group_tickets:
         ticket_id = raw.get('id')
 
-        if not is_not_resolved(raw):
+        if not is_tracked_status(raw):
             continue
 
         seen_ids.append(ticket_id)
@@ -157,9 +183,10 @@ def poll_new_tickets():
             new_count += 1
             print(f"  Saved ticket {ticket_id}: {data['subject']}")
 
-    # Prune tickets that dropped out of the live queue (resolved/closed/reassigned) —
-    # nothing else ever removes them, so without this they accumulate here forever.
-    # Guard against a fluke empty response wiping the whole collection.
+    # Prune tickets that dropped out of the tracked set (moved to an untracked status,
+    # deleted, or reassigned away) — nothing else ever removes them, so without this
+    # they accumulate here forever. Guard against a fluke empty response wiping the
+    # whole collection.
     if seen_ids:
         result = tickets_collection.delete_many({"ticket_id": {"$nin": seen_ids}})
         removed_count = result.deleted_count

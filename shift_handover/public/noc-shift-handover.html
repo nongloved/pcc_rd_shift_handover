@@ -196,6 +196,7 @@
   .pri-Scheduled{background:#ece8f5;color:#6b5b9a;box-shadow:inset 0 0 0 1px #b8a8e0}
   .typ{background:#ddf0fc;color:#122C4F;box-shadow:inset 0 0 0 1px #90d4f4}
   .upd{background:#fce7f3;color:#9d174d;box-shadow:inset 0 0 0 1px #f9a8d4;font-weight:500;letter-spacing:0}
+  .status{background:#eef2e0;color:#4B5A2A;box-shadow:inset 0 0 0 1px #C3D08A}
   .tid{font-family:var(--mono);font-size:12px;color:var(--txt2)}
   .ticket .title{font-weight:600;font-size:13.5px}
   .ticket .meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11.5px;color:var(--txt2)}
@@ -264,6 +265,9 @@
   #moreTicketsBtn{background:rgba(210,232,255,.55);border-color:#8399B9;color:#292F36}
   #moreTicketsBtn:hover{filter:brightness(0.95);color:#292F36}
   html.light #moreTicketsBtn{background:rgba(255,242,186,.55);border-color:#A07230}
+  #morePendingTicketsBtn{background:rgba(210,232,255,.55);border-color:#8399B9;color:#292F36}
+  #morePendingTicketsBtn:hover{filter:brightness(0.95);color:#292F36}
+  html.light #morePendingTicketsBtn{background:rgba(255,242,186,.55);border-color:#A07230}
 
   .empty{text-align:center;color:var(--txt3);font-size:12.5px;padding:18px 0;font-family:var(--mono)}
   .foot{margin-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
@@ -463,6 +467,7 @@
           <div class="ttl"><span class="dot" style="background:var(--signal)"></span> Ticket ค้าง ต้องดำเนินการต่อ</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="count" id="tkCount">0</span>
+            <a href="/pending-tickets" id="morePendingTicketsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
             <button id="refreshPendingTicketsBtn" class="btn-sm" onclick="loadPendingTickets()" style="padding:3px 9px;font-size:11px">↻</button>
           </div>
         </div>
@@ -484,6 +489,11 @@
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
             <option value="Scheduled">Scheduled</option>
+          </select>
+          <select id="tkStatusFilter" style="font-family:var(--mono);font-size:11px;background:var(--panel);
+              border:1px solid var(--line2);border-radius:6px;color:var(--txt);padding:6px 8px;cursor:pointer;
+              outline:none;max-width:220px">
+            <option value="">All statuses</option>
           </select>
         </div>
         <div class="body" id="tickets"></div>
@@ -565,15 +575,15 @@
     <div class="pm-body-scroll" style="overflow-x:auto;overflow-y:auto;height:238px;scrollbar-gutter:stable">
       <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px">
         <colgroup>
-          <col style="width:30px"><col style="width:10%"><col style="width:22%">
-          <col style="width:14%"><col style="width:10%"><col style="width:20%"><col style="width:11%">
+          <col style="width:30px"><col style="width:9%"><col style="width:19%">
+          <col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:17%"><col style="width:10%">
         </colgroup>
         <thead><tr>
           <th class="all-th">#</th><th class="all-th">Ticket No.</th><th class="all-th">Subject</th>
-          <th class="all-th">Location</th><th class="all-th">Room</th><th class="all-th">Note</th><th class="all-th">Due Date</th>
+          <th class="all-th">Location</th><th class="all-th">Room</th><th class="all-th">Status</th><th class="all-th">Note</th><th class="all-th">Due Date</th>
         </tr></thead>
         <tbody id="ticketsTableBody">
-          <tr><td colspan="7" class="empty" style="padding:24px">Loading…</td></tr>
+          <tr><td colspan="8" class="empty" style="padding:24px">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -757,16 +767,35 @@
     }).join("");
   }
 
+  function ticketStatusLabel(t){return t.status||stLabel(t.state);}
+
+  function populateStatusFilter(){
+    var sel=document.getElementById("tkStatusFilter"); if(!sel)return;
+    var cur=sel.value;
+    var counts={};
+    state.tickets.forEach(function(t){
+      var s=ticketStatusLabel(t); if(!s)return;
+      counts[s]=(counts[s]||0)+1;
+    });
+    var statuses=Object.keys(counts).sort();
+    sel.innerHTML='<option value="">All statuses ('+state.tickets.length+')</option>'+statuses.map(function(s){
+      return '<option value="'+esc(s)+'"'+(s===cur?' selected':'')+'>'+esc(s)+' ('+counts[s]+')</option>';
+    }).join("");
+  }
+
   function renderTickets(){
     populateReqTypeFilter();
+    populateStatusFilter();
     var el=document.getElementById("tickets");
     var q=(document.getElementById("tkSearch")||{value:""}).value.toLowerCase().trim();
     var rt=(document.getElementById("tkReqTypeFilter")||{value:""}).value;
     var pf=(document.getElementById("tkPriFilter")||{value:""}).value;
+    var sf=(document.getElementById("tkStatusFilter")||{value:""}).value;
     var all=state.tickets;
     var filtered=all.filter(function(t){
       if(rt && t.reqtype!==rt) return false;
       if(pf && t.pri!==pf) return false;
+      if(sf && ticketStatusLabel(t)!==sf) return false;
       if(q){
         var hay=[t.id,t.title,t.reqtype,t.site,t.note,t.pri,stLabel(t.state)].filter(Boolean).join(" ").toLowerCase();
         if(hay.indexOf(q)<0) return false;
@@ -790,6 +819,7 @@
           +'<span class="pill pri-'+t.pri+'">'+t.pri+'</span>'
           +'<span class="pill typ">Ticket No.</span>'
           +'<span class="tid">'+esc(t.id)+'</span>'
+          +'<span class="pill status">'+esc(ticketStatusLabel(t))+'</span>'
           +'<span class="sla '+s.cls+'">⏱ '+s.txt+'</span>'
         +'</div>'
         +'<div class="title">'+esc(t.title)+'</div>'
@@ -826,6 +856,7 @@
       reqtype: ht.request_type||"-",
       site: site||"-",
       state: mapStatus(ht.status),
+      status: ht.status||null,
       note: ht.note||"—",
       due: parseDueDate(ht.due_date),
       reportDate: ht.report_date||null,
@@ -838,7 +869,7 @@
       var res=await fetch("/api/ma-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
       var raw=await res.json();
-      var live=raw.filter(function(t){return t.status!=="Resolved";}).map(mapTicketFromHelpdesk);
+      var live=raw.map(mapTicketFromHelpdesk);
       var liveIds={}; live.forEach(function(t){liveIds[t.id]=true;});
       // keep manually-added local tickets that aren't sourced from Helpdesk and aren't superseded by a live one
       var localOnly=state.tickets.filter(function(t){return !t._hd && !liveIds[t.id] && !DEMO_TICKET_IDS[t.id];});
@@ -1086,6 +1117,7 @@
   document.getElementById("tkSearch").addEventListener("input",renderTickets);
   document.getElementById("tkReqTypeFilter").addEventListener("change",renderTickets);
   document.getElementById("tkPriFilter").addEventListener("change",renderTickets);
+  document.getElementById("tkStatusFilter").addEventListener("change",renderTickets);
 
   // click anywhere on a ticket card -> full detail popup
   document.getElementById("tickets").addEventListener("click",function(e){
@@ -1128,7 +1160,7 @@
       ["Title", t.title||"—"],
       ["ประเภทงาน", t.reqtype||"—"],
       ["Site", t.site||"—"],
-      ["Status", stLabel(t.state)||"—"],
+      ["Status", ticketStatusLabel(t)||"—"],
       ["Note", t.note||"—"],
       ["SLA Due", due],
       ["วันที่เปิด", opened],
@@ -1139,6 +1171,7 @@
     openDetailPopup("รายละเอียด Ticket",[
       ["Ticket No.", t.ticket_id!=null?t.ticket_id:"—"],
       ["Subject", t.subject||"—"],
+      ["Status", t.status||"—"],
       ["Location", t.location||"—"],
       ["Room", t.room||"—"],
       ["Detail", t.detail||"—"],
@@ -1190,7 +1223,7 @@
   var pmTicketsToday=[];
 
   function ticketText(t){
-    var parts=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.note,t.due_date,t.detail];
+    var parts=[t.ticket_id,t.circuit_id,t.subject,t.location,t.room,t.status,t.note,t.due_date,t.detail];
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
@@ -1209,7 +1242,7 @@
     var doneCount=pmTicketsToday.filter(function(t){return t.done;}).length;
     document.getElementById("ticketsCount").textContent=records.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
     if(!records.length){
-      tb.innerHTML='<tr><td colspan="7" class="empty" style="padding:20px">No tickets.</td></tr>';
+      tb.innerHTML='<tr><td colspan="8" class="empty" style="padding:20px">No tickets.</td></tr>';
       return;
     }
     var rows=records.map(function(t,i){
@@ -1221,6 +1254,7 @@
         +'<td>'+esc(t.subject||"—")+'</td>'
         +'<td>'+esc(t.location||"—")+'</td>'
         +'<td>'+esc(t.room||"—")+'</td>'
+        +'<td style="font-size:11px">'+esc(t.status||"—")+'</td>'
         +'<td class="note-cell">'+esc(note.text)+(note.trunc?' <span class="more">...more</span>':'')+'</td>'
         +'<td style="font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)">'+esc(t.due_date||"—")+'</td>'
       +'</tr>';
@@ -1242,7 +1276,7 @@
       filterPmTicketsToday();
       renderKPIs();
     }catch(e){
-      document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="7" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
+      document.getElementById("ticketsTableBody").innerHTML='<tr><td colspan="8" class="empty" style="color:var(--bad)">Cannot load: '+esc(e.message)+'</td></tr>';
     }
   }
 
