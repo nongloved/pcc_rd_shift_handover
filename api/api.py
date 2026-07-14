@@ -1,13 +1,10 @@
 import os
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 from fastapi import FastAPI, HTTPException
 from pymongo import MongoClient
 from bson import ObjectId
 from pydantic import BaseModel
-
-BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
 
 
 def _build_mongo_uri():
@@ -28,7 +25,7 @@ def _build_mongo_uri():
     passwd = os.getenv('MONGO_PASS', '')
     host   = os.getenv('MONGO_HOST', 'localhost')
     port   = os.getenv('MONGO_PORT', '27018')
-    db     = os.getenv('MONGO_DB', 'uih_py_db')
+    db     = os.getenv('MONGO_DB', 'noc_shift_handover')
     auth   = os.getenv('MONGO_AUTH_SOURCE', 'admin')
     if user and passwd:
         return f"mongodb://{quote_plus(user)}:{quote_plus(passwd)}@{host}:{port}/{db}?authSource={auth}"
@@ -37,14 +34,19 @@ def _build_mongo_uri():
 
 MONGO_URI = _build_mongo_uri()
 client = MongoClient(MONGO_URI)
-db = client[os.getenv('MONGO_DB', 'uih_pm_mails')]
+db = client[os.getenv('MONGO_DB', 'noc_shift_handover')]
+
 collection = db['pm_mails']
-
-helpdesk_db = client[os.getenv('HELPDESK_MONGO_DB', 'ma_tickets')]
-tickets_collection = helpdesk_db['tickets']
-
-employee_db = client[os.getenv('EMPLOYEE_MONGO_DB', 'helpdesk_user_db')]
-employees_collection = employee_db['helpdesk_users']
+# noc_tickets_collection: every tracked-status ticket (feeds "Ticket ค้าง ต้องดำเนินการต่อ").
+# pm_tickets_today_collection: derived subset — Preventive Maintenance Plan tickets
+# reported today (feeds "PM Tickets วันนี้") — materialized by helpdesk_monitoring
+# each poll, so this API just reads it directly rather than filtering at request time.
+# pm_tickets_history_collection: permanent archive of every Preventive Maintenance
+# Plan ticket ever seen by the sync (not date-limited, never pruned).
+noc_tickets_collection = db['noc_tickets']
+pm_tickets_today_collection = db['ma_tickets_today']
+pm_tickets_history_collection = db['ma_tickets']
+employees_collection = db['helpdesk_users']
 
 app = FastAPI()
 
@@ -109,30 +111,20 @@ def delete_uih_mail(record_id: str):
 
 @app.get("/api/ma-tickets")
 def get_ma_tickets():
-    tickets = list(tickets_collection.find().sort("ticket_id", -1))
+    tickets = list(noc_tickets_collection.find().sort("ticket_id", -1))
     return [serialize(t) for t in tickets]
-
-
-def _is_reported_today(report_date):
-    if not report_date:
-        return False
-    try:
-        dt = datetime.fromisoformat(str(report_date).replace("Z", "+00:00"))
-    except ValueError:
-        return False
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
-    return dt.astimezone(BANGKOK_TZ).date() == datetime.now(BANGKOK_TZ).date()
 
 
 @app.get("/api/ma-pm-tickets")
 def get_ma_pm_tickets():
-    tickets = list(tickets_collection.find().sort("ticket_id", -1))
-    pm_today = [
-        t for t in tickets
-        if t.get("request_type") == "Preventive Maintenance Plan" and _is_reported_today(t.get("report_date"))
-    ]
-    return [serialize(t) for t in pm_today]
+    tickets = list(pm_tickets_today_collection.find().sort("ticket_id", -1))
+    return [serialize(t) for t in tickets]
+
+
+@app.get("/api/ma-tickets-history")
+def get_ma_tickets_history():
+    tickets = list(pm_tickets_history_collection.find().sort("ticket_id", -1))
+    return [serialize(t) for t in tickets]
 
 
 class MaTicketUpdate(BaseModel):
@@ -144,7 +136,7 @@ def update_ma_ticket(ticket_id: str, body: MaTicketUpdate):
     fields = {k: v for k, v in body.model_dump().items() if v is not None}
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
-    result = tickets_collection.update_one(
+    result = noc_tickets_collection.update_one(
         {"_id": ObjectId(ticket_id)},
         {"$set": fields}
     )

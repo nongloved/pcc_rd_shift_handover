@@ -691,6 +691,12 @@
 
   /* ---------- helpers ---------- */
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function bangkokStamp(){
+    var parts={};
+    new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
+      .formatToParts(new Date()).forEach(function(p){parts[p.type]=p.value;});
+    return parts.year+"-"+parts.month+"-"+parts.day+"-"+parts.hour+"-"+parts.minute+"-"+parts.second;
+  }
   function truncateText(s,max){
     s=s==null?"":String(s);
     if(s.length<=max)return{text:s,trunc:false};
@@ -1093,6 +1099,56 @@
     document.getElementById("ackModal").classList.add("open");
   }
   function closeAckModal(){document.getElementById("ackModal").classList.remove("open");}
+
+  /* ---------- shift handover PDF log ---------- */
+  function openHandoverLogPdf(ackInfo){
+    var uihTotal=uihRecords.length;
+    var uihUndone=uihRecords.filter(function(r){return !r.done;}).length;
+    var pmTotal=pmTicketsToday.length;
+    var pmUndone=pmTicketsToday.filter(function(t){return !t.done;}).length;
+    var ticketUndone=state.tickets.length;
+
+    var stamp=bangkokStamp();
+    var title="shift-handover-log-"+stamp;
+    var win=window.open("","_blank");
+    if(!win){alert("กรุณาอนุญาต pop-up เพื่อสร้างไฟล์ PDF บันทึกการส่งมอบงาน");return;}
+
+    var html=""
+      +"<!DOCTYPE html><html lang=\"th\"><head><meta charset=\"UTF-8\">"
+      +"<title>"+esc(title)+"</title>"
+      +"<link href=\"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap\" rel=\"stylesheet\">"
+      +"<style>"
+      +"*{box-sizing:border-box}"
+      +"body{font-family:'IBM Plex Sans Thai',sans-serif;color:#1a1a1a;padding:40px;max-width:720px;margin:0 auto}"
+      +"h1{font-size:20px;margin:0 0 4px}"
+      +".meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#555;margin-bottom:26px}"
+      +".block{margin-bottom:22px}"
+      +".block h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;color:#555;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:10px}"
+      +".row{display:flex;justify-content:space-between;gap:16px;padding:5px 0;font-size:14px}"
+      +".row b{font-family:'IBM Plex Mono',monospace;white-space:nowrap}"
+      +"@media print{body{padding:0}}"
+      +"</style></head><body>"
+      +"<h1>บันทึกส่งมอบ-รับมอบงาน (Shift Handover Log)</h1>"
+      +"<div class=\"meta\">"+esc(ackInfo.at)+" &middot; "+esc(ackInfo.shiftLabel)+"</div>"
+      +"<div class=\"block\"><h2>ผู้ส่งมอบ / ผู้รับมอบงาน</h2>"
+      +"<div class=\"row\"><span>ผู้ส่งมอบงาน (From)</span><b>"+esc(ackInfo.fromName)+" &lt;"+esc(ackInfo.fromEmail)+"&gt;</b></div>"
+      +"<div class=\"row\"><span>ผู้รับมอบงาน (To)</span><b>"+esc(ackInfo.toName)+" &lt;"+esc(ackInfo.toEmail)+"&gt;</b></div>"
+      +"</div>"
+      +"<div class=\"block\"><h2>งานค้าง ณ เวลาส่งมอบ (Outstanding items at handover)</h2>"
+      +"<div class=\"row\"><span>ใบแจ้งงาน RD วันนี้</span><b>"+uihUndone+" / "+uihTotal+" ค้าง</b></div>"
+      +"<div class=\"row\"><span>PM Tickets วันนี้ (MA)</span><b>"+pmUndone+" / "+pmTotal+" ค้าง</b></div>"
+      +"<div class=\"row\"><span>Ticket ค้าง ต้องดำเนินการต่อ</span><b>"+ticketUndone+" รายการ</b></div>"
+      +"</div>"
+      +"</body></html>";
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function(){
+      try{win.focus();win.print();}catch(e){}
+    },600);
+  }
+
   document.getElementById("ackBtn").addEventListener("click",openAckModal);
   document.getElementById("ackModalClose").addEventListener("click",closeAckModal);
   document.getElementById("ackCancel").addEventListener("click",closeAckModal);
@@ -1103,11 +1159,14 @@
     if(!ackVerified.from||!ackVerified.to||!ackIdentity.from||!ackIdentity.to)return;
     var fEmail=val("ack-from-email"), tEmail=val("ack-to-email");
     var d=new Date();
-    state.ack[shift]={
+    var ackInfo={
       fromName:ackIdentity.from.firstName+" "+ackIdentity.from.lastName, fromEmail:fEmail,
       toName:ackIdentity.to.firstName+" "+ackIdentity.to.lastName, toEmail:tEmail,
-      at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})
+      at:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}),
+      shiftLabel:shift==="day"?"กะกลางวัน":"กะกลางคืน"
     };
+    state.ack[shift]=ackInfo;
+    openHandoverLogPdf(ackInfo);
     save();render();
     closeAckModal();
     shift=shift==="day"?"night":"day";

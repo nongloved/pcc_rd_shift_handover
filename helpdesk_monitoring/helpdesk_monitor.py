@@ -3,10 +3,13 @@ import re
 import time
 import warnings
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 import urllib3
 from pymongo import MongoClient
+
+BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -61,11 +64,35 @@ def _build_mongo_uri():
 
 
 MONGO_URI = _build_mongo_uri()
-HELPDESK_MONGO_DB = os.getenv('HELPDESK_MONGO_DB', 'ma_tickets')
+MONGO_DB = os.getenv('MONGO_DB', 'noc_shift_handover')
 
 client = MongoClient(MONGO_URI)
-db = client[HELPDESK_MONGO_DB]
-tickets_collection = db['tickets']
+db = client[MONGO_DB]
+# noc_tickets: every tracked-status ticket (feeds "Ticket ค้าง ต้องดำเนินการต่อ").
+# ma_tickets_today: derived subset — Preventive Maintenance Plan tickets reported
+# today (feeds "PM Tickets วันนี้") — materialized here each poll instead of filtered
+# at request time, so the API layer can just read it directly. Mutually exclusive
+# with noc_tickets.
+# ma_tickets: permanent archive of every Preventive Maintenance Plan ticket ever seen
+# by this sync (not date-limited) — accumulated only, never pruned. Can only cover
+# tracked statuses (Closed is never fetched — see TRACKED_STATUSES above), so this is
+# a running archive from when this collection was introduced onward, not a backfill
+# of every PM-Plan ticket in WebHelpDesk's history.
+tickets_collection = db['noc_tickets']
+pm_tickets_today_collection = db['ma_tickets_today']
+pm_tickets_history_collection = db['ma_tickets']
+
+
+def _is_reported_today(report_date):
+    if not report_date:
+        return False
+    try:
+        dt = datetime.fromisoformat(str(report_date).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+    return dt.astimezone(BANGKOK_TZ).date() == datetime.now(BANGKOK_TZ).date()
 
 
 def _fetch_tickets_by_status(status):
@@ -155,56 +182,83 @@ def is_tracked_status(raw):
     return status in TRACKED_STATUSES
 
 
-def poll_new_tickets():
-    group_tickets = fetch_group_tickets()
+def _sync_ticket_collection(collection, label, tickets, prune=True):
+    """Upsert `tickets` (already-extracted field dicts) into `collection` by
+    ticket_id, preserving each document's locally-set Done flag. When `prune` is
+    True (the default), also delete anything no longer present — used for
+    noc_tickets/ma_tickets_today, which mirror *current* state. When False, the
+    collection only ever grows — used for ma_tickets, a permanent archive."""
     new_count = 0
     updated_count = 0
     removed_count = 0
     seen_ids = []
 
-    for raw in group_tickets:
-        ticket_id = raw.get('id')
-
-        if not is_tracked_status(raw):
-            continue
-
+    for data in tickets:
+        ticket_id = data["ticket_id"]
         seen_ids.append(ticket_id)
-        data = extract_ticket_fields(raw)
-        existing = tickets_collection.find_one({"ticket_id": ticket_id})
+        existing = collection.find_one({"ticket_id": ticket_id})
 
         if existing:
-            data.pop('done', None)  # preserve the locally-set Done flag
-            if any(existing.get(k) != v for k, v in data.items() if k != 'processed_at'):
-                tickets_collection.update_one({"_id": existing["_id"]}, {"$set": data})
+            fields = {k: v for k, v in data.items() if k != 'done'}  # preserve the locally-set Done flag
+            if any(existing.get(k) != v for k, v in fields.items() if k != 'processed_at'):
+                collection.update_one({"_id": existing["_id"]}, {"$set": fields})
                 updated_count += 1
-                print(f"  Updated ticket {ticket_id}: {data['subject']}")
+                print(f"  [{label}] Updated ticket {ticket_id}: {data['subject']}")
         else:
-            tickets_collection.insert_one(data)
+            collection.insert_one(data)
             new_count += 1
-            print(f"  Saved ticket {ticket_id}: {data['subject']}")
+            print(f"  [{label}] Saved ticket {ticket_id}: {data['subject']}")
 
-    # Prune tickets that dropped out of the tracked set (moved to an untracked status,
-    # deleted, or reassigned away) — nothing else ever removes them, so without this
-    # they accumulate here forever. Guard against a fluke empty response wiping the
-    # whole collection.
+    if not prune:
+        return new_count, updated_count, removed_count
+
+    # Prune tickets that dropped out of this tracked set — nothing else ever removes
+    # them, so without this they accumulate here forever. Guard against a fluke empty
+    # response wiping the whole collection.
     if seen_ids:
-        result = tickets_collection.delete_many({"ticket_id": {"$nin": seen_ids}})
+        result = collection.delete_many({"ticket_id": {"$nin": seen_ids}})
         removed_count = result.deleted_count
         if removed_count:
-            print(f"  Removed {removed_count} ticket(s) no longer in the live queue")
+            print(f"  [{label}] Removed {removed_count} ticket(s) no longer in the tracked set")
     else:
-        print("  Skipping prune: live queue returned no tickets")
+        print(f"  [{label}] Skipping prune: tracked set returned no tickets")
 
     return new_count, updated_count, removed_count
+
+
+def _is_pm_today(ticket):
+    return ticket.get("request_type") == "Preventive Maintenance Plan" and _is_reported_today(ticket.get("report_date"))
+
+
+def poll_new_tickets():
+    group_tickets = fetch_group_tickets()
+    tracked = [extract_ticket_fields(raw) for raw in group_tickets if is_tracked_status(raw)]
+
+    # Mutually exclusive: a PM-Plan-reported-today ticket lives in ma_tickets_today
+    # only, not also in noc_tickets — otherwise it'd show up on both "Ticket ค้าง" and
+    # "PM Tickets วันนี้" at once.
+    pm_today = [t for t in tracked if _is_pm_today(t)]
+    noc_only = [t for t in tracked if not _is_pm_today(t)]
+    pm_all = [t for t in tracked if t.get("request_type") == "Preventive Maintenance Plan"]
+
+    noc_result = _sync_ticket_collection(tickets_collection, "noc_tickets", noc_only)
+    pm_result = _sync_ticket_collection(pm_tickets_today_collection, "ma_tickets_today", pm_today)
+    history_result = _sync_ticket_collection(
+        pm_tickets_history_collection, "ma_tickets", pm_all, prune=False
+    )
+
+    return noc_result, pm_result, history_result
 
 
 def monitor_helpdesk():
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print(f"[{ts}] Checking group ticket queue...")
     try:
-        new_count, updated_count, removed_count = poll_new_tickets()
-        if new_count or updated_count or removed_count:
-            print(f"  Done checking — {new_count} new, {updated_count} updated, {removed_count} removed")
+        (noc_new, noc_updated, noc_removed), (pm_new, pm_updated, pm_removed), (hist_new, hist_updated, _) = poll_new_tickets()
+        if noc_new or noc_updated or noc_removed or pm_new or pm_updated or pm_removed or hist_new or hist_updated:
+            print(f"  Done checking — noc_tickets: {noc_new} new, {noc_updated} updated, {noc_removed} removed "
+                  f"| ma_tickets_today: {pm_new} new, {pm_updated} updated, {pm_removed} removed "
+                  f"| ma_tickets: {hist_new} new, {hist_updated} updated")
         else:
             print("  No changes")
     except Exception as e:
@@ -218,7 +272,7 @@ if __name__ == "__main__":
     print("Starting Helpdesk Ticket Monitor")
     print("=" * 50)
     print(f"Helpdesk host: {HELPDESK_HOST}")
-    print(f"Mongo DB: {HELPDESK_MONGO_DB}")
+    print(f"Mongo DB: {MONGO_DB}")
     print("=" * 50)
 
     while True:

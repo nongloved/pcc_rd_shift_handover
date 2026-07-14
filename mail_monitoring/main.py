@@ -38,7 +38,7 @@ def _build_mongo_uri():
     passwd = os.getenv('MONGO_PASS', '')
     host   = os.getenv('MONGO_HOST', 'localhost')
     port   = os.getenv('MONGO_PORT', '27018')
-    db     = os.getenv('MONGO_DB', 'uih_pm_mails')
+    db     = os.getenv('MONGO_DB', 'noc_shift_handover')
     auth   = os.getenv('MONGO_AUTH_SOURCE', 'admin')
     if user and passwd:
         return f"mongodb://{quote_plus(user)}:{quote_plus(passwd)}@{host}:{port}/{db}?authSource={auth}"
@@ -48,7 +48,7 @@ def _build_mongo_uri():
 MONGO_URI = _build_mongo_uri()
 
 client = MongoClient(MONGO_URI)
-db = client[os.getenv('MONGO_DB', 'uih_pm_mails')]
+db = client[os.getenv('MONGO_DB', 'noc_shift_handover')]
 collection = db['pm_mails']
 
 

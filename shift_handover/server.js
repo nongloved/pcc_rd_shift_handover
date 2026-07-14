@@ -79,8 +79,9 @@ app.delete('/api/uih-mails/:id', (req, res) => {
   proxyMutate('DELETE', `/api/uih-mails/${req.params.id}`, null, res);
 });
 
-app.get('/api/ma-tickets',    (req, res) => proxyGet('/api/ma-tickets', res));
-app.get('/api/ma-pm-tickets', (req, res) => proxyGet('/api/ma-pm-tickets', res));
+app.get('/api/ma-tickets',         (req, res) => proxyGet('/api/ma-tickets', res));
+app.get('/api/ma-pm-tickets',      (req, res) => proxyGet('/api/ma-pm-tickets', res));
+app.get('/api/ma-tickets-history', (req, res) => proxyGet('/api/ma-tickets-history', res));
 
 app.put('/api/ma-tickets/:id', (req, res) => {
   proxyMutate('PUT', `/api/ma-tickets/${req.params.id}`, req.body, res);

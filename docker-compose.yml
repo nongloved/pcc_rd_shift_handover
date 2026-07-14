@@ -23,8 +23,6 @@ services:
     container_name: pccrd_helpdesk_monitoring
     restart: unless-stopped
     env_file: .env
-    environment:
-      HELPDESK_MONGO_DB: ma_tickets
     extra_hosts:
       - "mongodb-primary:10.1.9.176"
       - "mongodb-secondary:10.1.9.177"
