@@ -221,8 +221,7 @@ def process_folder(imap, folder):
             print("  skip: subject does not contain 'Maintenance/RD'")
             continue
 
-        # INTERNALDATE is stamped by the mail server itself when the message arrived —
-        # unlike the Date: header, it can't be set/skewed by the sending client.
+       
         mail_received_at = None
         internaldate_match = re.search(rb'INTERNALDATE "([^"]+)"', msg_data[0][0])
         if internaldate_match:
@@ -244,9 +243,7 @@ def process_folder(imap, folder):
             pdf_bytes = part.get_payload(decode=True)
             local_path = os.path.join(PROCESSED_FOLDER, attachment_name)
 
-            # Dedup via the PDF already existing on disk (in the pdf_processed volume) —
-            # deliberately NOT MongoDB-based, so deleting DB records/collections (e.g. via
-            # Compass) can never cause an email to be treated as new and reprocessed.
+            
             if os.path.exists(local_path):
                 print(f"  skip: already processed: {attachment_name}")
                 continue

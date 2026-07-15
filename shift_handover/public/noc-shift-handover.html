@@ -655,15 +655,12 @@
   </div>
 </div>
 
+<script src="/shared.js"></script>
 <script>
 (function(){
   "use strict";
   var KEY = "noc:handover:v1";
-  function defaultShiftByTime(){
-    var hour=parseInt(new Date().toLocaleString("en-US",{timeZone:"Asia/Bangkok",hour:"numeric",hourCycle:"h23"}),10);
-    return (hour>=20||hour<8)?"night":"day";
-  }
-  var shift = defaultShiftByTime();
+  var shift = NOC.defaultShiftByTime();
 
   /* ---------- storage (graceful fallback) ---------- */
   var mem = null;
@@ -690,37 +687,17 @@
   var uihRecords = [];
 
   /* ---------- helpers ---------- */
-  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
-  function bangkokStamp(){
-    var parts={};
-    new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
-      .formatToParts(new Date()).forEach(function(p){parts[p.type]=p.value;});
-    return parts.year+"-"+parts.month+"-"+parts.day+"-"+parts.hour+"-"+parts.minute+"-"+parts.second;
-  }
+  var esc = NOC.esc;
+  var bangkokStamp = NOC.bangkokStamp;
+  var splitTime = NOC.splitTime;
+  var formatTHT = NOC.formatTHT;
+  var formatDowntime = NOC.formatDowntime;
   function truncateText(s,max){
     s=s==null?"":String(s);
     if(s.length<=max)return{text:s,trunc:false};
     var cut=s.slice(0,max);
     var trimmed=cut.replace(/\s+\S*$/,"");
     return{text:(trimmed||cut).trim(),trunc:true};
-  }
-  function splitTime(str){
-    if(!str||str==="N/A")return["—","—"];
-    var parts=str.split(/\s*[-–]\s*(?=\d{2}:\d{2})/);
-    if(parts.length===2)return[parts[0].trim(),parts[1].trim()];
-    var mid=str.indexOf(" - ");
-    if(mid!==-1)return[str.slice(0,mid).trim(),str.slice(mid+3).trim()];
-    return[str,"—"];
-  }
-  function formatTHT(str){
-    if(!str||str==="—")return"—";
-    return str.replace(/\s*THT\s*/gi," ").replace(/(\d{2}\/\d{2}\/)20(\d{2})/g,"$1$2").trim();
-  }
-  function formatDowntime(str){
-    if(!str||str==="N/A"||str==="—")return"—";
-    var m=str.match(/(\d+):(\d+)/);
-    if(m)return parseInt(m[1])+" hr(s)";
-    return str;
   }
   function formatUpdatedAt(dateStr){
     if(!dateStr)return null;
@@ -841,10 +818,7 @@
   // one-time cleanup: strip old hardcoded demo tickets from any browser that already
   // persisted them to storage before this card switched to a live data source
   var DEMO_TICKET_IDS={"INC-25061812":1,"INC-25061805":1,"REQ-25061720":1,"INC-25061709":1};
-  function mapPriority(p){
-    var m={"Critical":"Critical","Urgent":"Critical","High":"High","Medium":"Medium","Low":"Low","Scheduled":"Scheduled"};
-    return m[p]||"Medium";
-  }
+  var mapPriority = NOC.mapPriority;
   function mapStatus(s){
     var m={"New":"new","Open":"new","Assigned":"prog","In Progress":"prog","Pending":"hold","On Hold":"hold","Hold":"hold"};
     return m[s]||"prog";
@@ -887,15 +861,7 @@
     }
   }
 
-  function extractLocation(name){
-    if(!name)return"—";
-    var idx=name.indexOf(" - ");
-    if(idx===-1)return name.trim();
-    var after=name.slice(idx+3).trim();
-    var paren=after.lastIndexOf(")");
-    if(paren!==-1)return after.slice(0,paren+1).trim();
-    return after.replace(/\s+(Main|Back\s*up|Backup)$/i,"").trim();
-  }
+  var extractLocation = NOC.extractLocation;
 
   function filterUIHTable(){
     var q=(document.getElementById("uihSearch")||{value:""}).value.toLowerCase();
@@ -1003,10 +969,7 @@
   }
 
   /* ---------- events ---------- */
-  function applyTheme(s){
-    document.documentElement.classList.toggle("light", s==="day");
-    localStorage.setItem("nocTheme", s==="day"?"light":"dark");
-  }
+  var applyTheme = NOC.applyTheme;
   applyTheme(shift);
 
   document.getElementById("toggle").addEventListener("click",function(){

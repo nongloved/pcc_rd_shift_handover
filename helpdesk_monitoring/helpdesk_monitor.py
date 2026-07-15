@@ -18,22 +18,10 @@ HELPDESK_USER = os.getenv('HELPDESK_USER', '')
 HELPDESK_PASS = os.getenv('HELPDESK_PASS', '')
 TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets"
 
-# Only tickets in one of these statuses are synced — a whitelist instead of a
-# blacklist, so any status we haven't explicitly vetted (Rejected, Pending Change,
-# or anything WebHelpDesk adds later) is excluded by default rather than leaking
-# through unnoticed. "Closed" is deliberately excluded despite being a valid status:
-# it's a large, effectively-static historical archive (hundreds+ tickets going back
-# years) that would make each poll take 1-2+ minutes for no operational benefit,
-# since closed tickets never change — that's especially costly now that polls run
-# every minute.
+
 TRACKED_STATUSES = {"Open", "Assigned", "Pending Customer", "Pending Vendor", "Resolved"}
 
-# Individual tickets manually confirmed stale/invalid despite an active-looking
-# status — excluded one-off rather than blacklisting the whole status, since most
-# tickets in that status are legitimate.
-# 110631, 111598: "Pending Vendor" for 5 months with zero movement.
-# 131377: "[TEST-LINEOA]" test ticket, note field has test@example.com — not a
-#   real incident.
+
 MANUALLY_EXCLUDED_TICKET_IDS = {110631, 111598, 131377}
 
 POLL_INTERVAL_SEC = 60
@@ -68,16 +56,7 @@ MONGO_DB = os.getenv('MONGO_DB', 'noc_shift_handover')
 
 client = MongoClient(MONGO_URI)
 db = client[MONGO_DB]
-# noc_tickets: every tracked-status ticket (feeds "Ticket ค้าง ต้องดำเนินการต่อ").
-# ma_tickets_today: derived subset — Preventive Maintenance Plan tickets reported
-# today (feeds "PM Tickets วันนี้") — materialized here each poll instead of filtered
-# at request time, so the API layer can just read it directly. Mutually exclusive
-# with noc_tickets.
-# ma_tickets: permanent archive of every Preventive Maintenance Plan ticket ever seen
-# by this sync (not date-limited) — accumulated only, never pruned. Can only cover
-# tracked statuses (Closed is never fetched — see TRACKED_STATUSES above), so this is
-# a running archive from when this collection was introduced onward, not a backfill
-# of every PM-Plan ticket in WebHelpDesk's history.
+
 tickets_collection = db['noc_tickets']
 pm_tickets_today_collection = db['ma_tickets_today']
 pm_tickets_history_collection = db['ma_tickets']
@@ -212,9 +191,7 @@ def _sync_ticket_collection(collection, label, tickets, prune=True):
     if not prune:
         return new_count, updated_count, removed_count
 
-    # Prune tickets that dropped out of this tracked set — nothing else ever removes
-    # them, so without this they accumulate here forever. Guard against a fluke empty
-    # response wiping the whole collection.
+   
     if seen_ids:
         result = collection.delete_many({"ticket_id": {"$nin": seen_ids}})
         removed_count = result.deleted_count
@@ -234,9 +211,7 @@ def poll_new_tickets():
     group_tickets = fetch_group_tickets()
     tracked = [extract_ticket_fields(raw) for raw in group_tickets if is_tracked_status(raw)]
 
-    # Mutually exclusive: a PM-Plan-reported-today ticket lives in ma_tickets_today
-    # only, not also in noc_tickets — otherwise it'd show up on both "Ticket ค้าง" and
-    # "PM Tickets วันนี้" at once.
+  
     pm_today = [t for t in tracked if _is_pm_today(t)]
     noc_only = [t for t in tracked if not _is_pm_today(t)]
     pm_all = [t for t in tracked if t.get("request_type") == "Preventive Maintenance Plan"]

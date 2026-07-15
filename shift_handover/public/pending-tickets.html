@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ticket ค้าง — All</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared.css">
 <style>
   :root{
     --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
@@ -24,7 +25,7 @@
     --accent-green:#22C08C; --accent-green-dim:rgba(34,192,140,.16);
     --bg-glow-1:rgba(59,130,246,.28); --bg-glow-2:rgba(34,192,140,.24);
   }
-  *{box-sizing:border-box;margin:0;padding:0}
+
   body{font-family:var(--sans);background:
       radial-gradient(1100px 560px at 88% -8%, var(--bg-glow-1) 0%, transparent 60%),
       radial-gradient(900px 520px at -6% 22%, var(--bg-glow-2) 0%, transparent 58%),
@@ -32,67 +33,16 @@
       var(--bg);
     background-attachment:fixed;
     color:var(--txt);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
-
-  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-    padding:14px 18px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:14px;
-    backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);
-    box-shadow:inset 0 1px 0 var(--glass-highlight),0 8px 28px var(--glass-shadow);
-    position:relative;z-index:5}
-  header::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:16px 16px 0 0;
-    background:linear-gradient(90deg,var(--accent-blue),var(--accent-green));opacity:.7}
-  .back{font-family:var(--sans);font-size:13px;font-weight:600;color:#3E2723;
-    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:9px;padding:6px 14px;cursor:pointer;text-decoration:none;transition:.15s;
-    backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);box-shadow:inset 0 1px 0 var(--glass-highlight);
-    position:relative;overflow:hidden}
-  .back::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:9px 9px 0 0;
-    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none}
-  .back:hover{background:var(--signal);color:#FAF5F1}
-  header h1{font-size:15px;font-weight:700}
-  header .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
 
   /* ---------- SHIFT LABEL ---------- */
-  .shift-label{
-    font-family:var(--sans);font-size:12.5px;font-weight:600;color:var(--txt2);cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
-    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:999px;padding:8px 14px;
-    backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
-    box-shadow:inset 0 1px 0 var(--glass-highlight),0 2px 10px var(--glass-shadow);
-    position:relative;overflow:hidden;transition:.18s;
-  }
-  .shift-label::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:999px 999px 0 0;
-    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));pointer-events:none}
-  .shift-label .ic,.shift-label .txt{position:relative;z-index:1}
-  .shift-label .ic{font-size:14px}
-  .shift-label:hover{transform:translateY(-1px)}
-  .shift-label:active{transform:scale(.95)}
-  .shift-label[data-shift="day"]{background:linear-gradient(180deg,rgba(255,244,214,.95),rgba(255,224,140,.55));color:var(--day)}
-  .shift-label[data-shift="night"]{background:linear-gradient(180deg,rgba(214,233,255,.95),rgba(160,200,255,.55));color:var(--night)}
 
-  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .shift-label .ic{font-size:14px}
+
   .toolbar input{font-family:var(--sans);font-size:12.5px;background:var(--panel);border:1px solid var(--line2);
     border-radius:7px;color:var(--txt);padding:8px 12px;outline:none;width:260px}
-  .toolbar input:focus{border-color:var(--signal)}
-  .toolbar input::placeholder{color:var(--txt3)}
-  .count-label{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-left:auto}
-  .toolbar select{font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line2);border-radius:7px;color:var(--txt);padding:8px 10px;outline:none;cursor:pointer;max-width:200px}
-  .toolbar select:focus{border-color:var(--signal)}
-  .export-wrap{position:relative;display:inline-block}
-  .export-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;
-    background:var(--panel);border:1px solid var(--line);border-radius:8px;
-    box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;min-width:160px}
-  .export-menu.open{display:block}
-  .export-menu button{display:block;width:100%;text-align:left;font-family:var(--sans);font-size:12.5px;
-    font-weight:600;padding:9px 14px;border:none;background:transparent;color:#3E2723;cursor:pointer;transition:.13s}
-  .export-menu button:hover{background:var(--bg2)}
-  .export-menu-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
-    color:var(--txt3);padding:8px 14px 4px;border-top:1px solid var(--line)}
-  .export-menu-label:first-child{border-top:none;padding-top:9px}
 
-  .card{background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;
-    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
-    box-shadow:inset 0 1px 0 var(--glass-highlight),0 6px 22px var(--glass-shadow)}
-  .tbl-wrap{overflow-x:auto}
+  .toolbar select{font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line2);border-radius:7px;color:var(--txt);padding:8px 10px;outline:none;cursor:pointer;max-width:200px}
+
   table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:1020px}
   col.c-num     {width:32px}
   col.c-ticket  {width:8%}
@@ -103,18 +53,9 @@
   col.c-site    {width:12%}
   col.c-note    {width:17%}
   col.c-due     {width:8%}
-  th{background:linear-gradient(135deg,var(--accent-blue-dim),var(--accent-green-dim));backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;
-    text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:nowrap}
-  td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);
-    overflow:hidden;text-overflow:ellipsis;transition:background-color .15s ease}
-  tr:last-child td{border-bottom:none}
-  tr:hover td{background:var(--panel2)}
-  .num{font-family:var(--mono);color:var(--txt3)}
+
   .mono{font-family:var(--mono)}
-  .datecol{font-family:var(--mono);font-size:10.5px;color:var(--txt3);white-space:nowrap}
-  .empty{text-align:center;color:var(--txt3);font-family:var(--mono);font-size:12px;padding:40px}
-  @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
-  tr.row-entering{animation:row-in .3s ease-out both}
+
   tbody tr{cursor:pointer}
   .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.4px;
     border-radius:5px;padding:2px 7px;white-space:nowrap;display:inline-block}
@@ -126,69 +67,14 @@
   .status{background:#eef2e0;color:#4B5A2A;box-shadow:inset 0 0 0 1px #C3D08A}
 
   /* ---- detail popup ---- */
-  .popup-overlay{display:flex;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.4);
-    backdrop-filter:blur(6px) saturate(112%);-webkit-backdrop-filter:blur(6px) saturate(112%);
-    align-items:flex-start;justify-content:center;padding:40px 20px;
-    overflow-y:auto;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
-  .popup-overlay.open{opacity:1;visibility:visible}
-  .popup-box{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;max-width:860px;
-    width:100%;margin:auto 0;max-height:90vh;overflow-y:auto;padding:20px 26px;position:relative;
-    backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);
-    box-shadow:0 16px 50px var(--glass-shadow),inset 0 1px 0 var(--glass-highlight),inset 0 0 0 1px rgba(255,255,255,.18);
-    transform:scale(.94) translateY(10px);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
-  .popup-overlay.open .popup-box{transform:scale(1) translateY(0)}
-  .popup-box h3{margin:0 0 10px;font-size:16px;font-weight:700}
-  .popup-box .close{position:absolute;top:12px;right:14px;width:30px;height:30px;display:grid;place-items:center;
-    cursor:pointer;color:var(--txt3);font-size:20px;line-height:1;background:var(--glass-bg);border:1px solid var(--glass-border);
-    border-radius:999px;padding:0;backdrop-filter:blur(10px);overflow:hidden;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(41,47,54,.14)}
-  .popup-box .close::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;border-radius:999px 999px 0 0;
-    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none}
-  .popup-box .close:hover{color:var(--bad);background:var(--glass-bg-strong)}
-  .popup-detail{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
-  .popup-detail .row.full{grid-column:1 / -1}
-  .popup-detail .row{border-bottom:1px solid var(--line);padding-bottom:9px}
-  .popup-detail .row .lab{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt3);font-family:var(--mono)}
-  .popup-detail .row .val{display:block;margin-top:3px;font-size:15px;line-height:1.5;color:var(--txt);
-    white-space:pre-wrap;word-break:break-word}
-  @media(max-width:560px){.popup-detail{grid-template-columns:1fr}}
 
-  #capoLoader{
-    display:none;position:fixed;inset:0;z-index:9999;
-    background:rgba(250,245,241,.88);backdrop-filter:blur(3px);
-    align-items:center;justify-content:center;flex-direction:column;gap:14px;
-  }
-  #capoLoader img{width:130px}
-  #capoLoader p{font-family:var(--mono);font-size:12px;color:var(--txt2);letter-spacing:.5px}
+  .popup-box h3{margin:0 0 10px;font-size:16px;font-weight:700}
 
   /* ── Light theme ── */
-  html.light{
-    --bg:#FAF5F1; --bg2:#E0DBD8; --panel:#FAF5F1; --panel2:#E0DBD8;
-    --line:#E0DBD8; --line2:#A9A7A7;
-    --txt:#292F36; --txt2:#292F36; --txt3:#727477;
-    --signal:#A41F13; --ok:#3A7A50; --warn:#A07230; --bad:#A41F13;
-    --day:#292F36; --night:#6B5C9E;
-    --accent-blue:#EF4444; --accent-blue-dim:rgba(239,68,68,.14);
-    --accent-green:#F5B400; --accent-green-dim:rgba(245,180,0,.26);
-    --bg-glow-1:rgba(239,68,68,.22); --bg-glow-2:rgba(245,180,0,.32);
-  }
-  html.light .modal-overlay{background:rgba(0,0,0,.3)}
-  html.light .popup-overlay{background:rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
-<script>
-(function(){
-  function defaultShiftByTime(){
-    var hour=parseInt(new Date().toLocaleString("en-US",{timeZone:"Asia/Bangkok",hour:"numeric",hourCycle:"h23"}),10);
-    return (hour>=20||hour<8)?"night":"day";
-  }
-  var stored=localStorage.getItem("nocTheme");
-  var shift=stored?(stored==="light"?"day":"night"):defaultShiftByTime();
-  document.documentElement.classList.toggle("light", shift==="day");
-  window.__shift=shift;
-})();
-</script>
+<script src="/shared.js" data-init-theme></script>
 <div class="wrap">
   <header>
     <div style="display:flex;align-items:center;gap:14px">
@@ -274,20 +160,9 @@
   var all = [];
   var currentFiltered = [];
 
-  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
-
-  function mapPriority(p){
-    var m={"Critical":"Critical","Urgent":"Critical","High":"High","Medium":"Medium","Low":"Low","Scheduled":"Scheduled"};
-    return m[p]||"Medium";
-  }
-
-  function formatDate(iso){
-    if(!iso)return"—";
-    var normalized=(/[Z+]/.test(iso.slice(10)))?iso:iso+"Z";
-    var d=new Date(normalized);
-    if(isNaN(d))return iso;
-    return d.toLocaleString("en-GB",{timeZone:"Asia/Bangkok",day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"});
-  }
+  var esc = NOC.esc;
+  var mapPriority = NOC.mapPriority;
+  var formatDate = NOC.formatDate;
 
   function siteOf(t){return [t.location,t.room].filter(Boolean).join(" / ")||"—";}
 
@@ -392,18 +267,9 @@
   });
 
   /* ---- export ---- */
-  function toggleExportMenu(){
-    document.getElementById("exportMenu").classList.toggle("open");
-  }
-  document.addEventListener("click",function(e){
-    var wrap=document.querySelector(".export-wrap");
-    if(wrap&&!wrap.contains(e.target))document.getElementById("exportMenu").classList.remove("open");
-  });
-  function csvEscape(v){
-    var s=String(v==null?"":v);
-    if(/[",\n]/.test(s))return '"'+s.replace(/"/g,'""')+'"';
-    return s;
-  }
+  NOC.setupExportMenu();
+  var csvEscape = NOC.csvEscape;
+  var downloadBlob = NOC.downloadBlob;
   function toCSV(records){
     var headers=["Ticket No.","Priority","Status","Subject","Request Type","Site","Note","Due Date"];
     var lines=[headers.join(",")];
@@ -413,25 +279,11 @@
     });
     return lines.join("\r\n");
   }
-  function downloadBlob(content,filename,mime){
-    var blob=new Blob([content],{type:mime});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement("a");
-    a.href=url;a.download=filename;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(function(){URL.revokeObjectURL(url);},1000);
-  }
-  function bangkokStamp(){
-    var parts={};
-    new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
-      .formatToParts(new Date()).forEach(function(p){parts[p.type]=p.value;});
-    return parts.year+"-"+parts.month+"-"+parts.day+"-"+parts.hour+"-"+parts.minute+"-"+parts.second;
-  }
   function exportTickets(format,scope){
     var records=scope==="filtered"?currentFiltered:all;
     if(!records.length){alert("No tickets to export.");return;}
     document.getElementById("exportMenu").classList.remove("open");
-    var stamp=bangkokStamp();
+    var stamp=NOC.bangkokStamp();
     var tag=scope==="filtered"?"pending-tickets-filtered-":"pending-tickets-";
     if(format==="json"){
       downloadBlob(JSON.stringify(records,null,2),tag+stamp+".json","application/json");
@@ -441,22 +293,7 @@
   }
 
   /* ---- shift theme toggle ---- */
-  var shift = window.__shift;
-  function applyTheme(s){
-    document.documentElement.classList.toggle("light", s==="day");
-    localStorage.setItem("nocTheme", s==="day"?"light":"dark");
-  }
-  function renderShiftLabel(){
-    document.getElementById("toggle").dataset.shift=shift;
-    document.getElementById("shiftIc").textContent=shift==="day"?"☀️":"🌙";
-    document.getElementById("shiftTxt").textContent=shift==="day"?"กะกลางวัน":"กะกลางคืน";
-  }
-  renderShiftLabel();
-  document.getElementById("toggle").addEventListener("click",function(){
-    shift = shift==="day"?"night":"day";
-    applyTheme(shift);
-    renderShiftLabel();
-  });
+  NOC.initShiftToggle();
 
   /* ---- load ---- */
   async function load(){
@@ -483,7 +320,6 @@
   load();
   window.load=load;
   window.applyFilter=applyFilter;
-  window.toggleExportMenu=toggleExportMenu;
   window.exportTickets=exportTickets;
 })();
 </script>

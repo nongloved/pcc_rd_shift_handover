@@ -55,5 +55,4 @@ services:
       - "4102:4102"
 
 volumes:
-  pccrd_mongo_data:
   pccrd_pdf_data:
