@@ -17,9 +17,18 @@ HELPDESK_HOST = os.getenv('HELPDESK_HOST', '10.1.18.2')
 HELPDESK_USER = os.getenv('HELPDESK_USER', '')
 HELPDESK_PASS = os.getenv('HELPDESK_PASS', '')
 TICKETS_BASE_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/Tickets"
+STATUS_TYPES_URL = f"https://{HELPDESK_HOST}/helpdesk/WebObjects/Helpdesk.woa/ra/StatusTypes"
 
 
-TRACKED_STATUSES = {"Open", "Assigned", "Pending Customer", "Pending Vendor", "Resolved"}
+# Denylist rather than allowlist: any status WebHelpDesk adds or renames is tracked
+# automatically without a code change. These are excluded because they're terminal
+# (a ticket here is done, not something NOC needs to act on) and, in Closed's case,
+# because it holds years of history — paginating it every poll would be far too slow.
+TERMINAL_STATUSES = {
+    "Closed", "Cancelled", "Rejected", "Deferred", "Not Reproducible",
+    "Request Rejected", "Solved by  Workaround", "Solved by Permanent  Fix",
+    "Pending Change",
+}
 
 
 MANUALLY_EXCLUDED_TICKET_IDS = {110631, 111598, 131377}
@@ -101,15 +110,30 @@ def _fetch_tickets_by_status(status):
     return tickets
 
 
+def fetch_active_statuses():
+    """Every WebHelpDesk status type except the terminal ones in TERMINAL_STATUSES."""
+    resp = requests.get(
+        STATUS_TYPES_URL,
+        params={"username": HELPDESK_USER, "password": HELPDESK_PASS},
+        verify=False,
+        timeout=15
+    )
+    resp.raise_for_status()
+    all_statuses = {s["statusTypeName"] for s in resp.json()}
+    return all_statuses - TERMINAL_STATUSES
+
+
 def fetch_group_tickets():
-    """Fetch all tickets across every tracked status, org-wide (not scoped to this
-    account's group), already full-detail via style=details."""
+    """Fetch all tickets across every non-terminal status, org-wide (not scoped to this
+    account's group), already full-detail via style=details. Returns the tickets plus
+    the active-status set used, so callers can filter without re-deriving it."""
+    active_statuses = fetch_active_statuses()
     tickets = []
-    for status in TRACKED_STATUSES:
+    for status in active_statuses:
         batch = _fetch_tickets_by_status(status)
         print(f"  Fetched {len(batch)} ticket(s) with status '{status}'")
         tickets.extend(batch)
-    return tickets
+    return tickets, active_statuses
 
 
 CIRCUIT_ID_RE = re.compile(r"Circuit ID(?:\s+(Main|Backup))?\s*:\s*(\S+)", re.IGNORECASE)
@@ -153,12 +177,12 @@ def extract_ticket_fields(raw):
     }
 
 
-def is_tracked_status(raw):
-    """Keep only tickets in a tracked status, minus any manually flagged as stale."""
+def is_tracked_status(raw, active_statuses):
+    """Keep only tickets in a non-terminal status, minus any manually flagged as stale."""
     if raw.get('id') in MANUALLY_EXCLUDED_TICKET_IDS:
         return False
     status = (raw.get('statustype') or {}).get('statusTypeName') or ''
-    return status in TRACKED_STATUSES
+    return status in active_statuses
 
 
 def _sync_ticket_collection(collection, label, tickets, prune=True):
@@ -208,8 +232,8 @@ def _is_pm_today(ticket):
 
 
 def poll_new_tickets():
-    group_tickets = fetch_group_tickets()
-    tracked = [extract_ticket_fields(raw) for raw in group_tickets if is_tracked_status(raw)]
+    group_tickets, active_statuses = fetch_group_tickets()
+    tracked = [extract_ticket_fields(raw) for raw in group_tickets if is_tracked_status(raw, active_statuses)]
 
   
     pm_today = [t for t in tracked if _is_pm_today(t)]
