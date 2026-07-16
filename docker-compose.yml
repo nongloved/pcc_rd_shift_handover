@@ -48,6 +48,7 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    env_file: .env
     environment:
       PORT: "4102"
       UIH_API_URL: http://api:8000

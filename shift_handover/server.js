@@ -1,11 +1,30 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 const UIH_API = process.env.UIH_API_URL || 'http://localhost:3000';
 const TIMEOUT_MS = 8000;
+
+const O365_CLIENT_ID = process.env.O365_CLIENT_ID;
+const O365_CLIENT_SECRET = process.env.O365_CLIENT_SECRET;
+const O365_TENANT_ID = process.env.O365_TENANT_ID || 'common';
+const O365_REDIRECT_URI = process.env.O365_REDIRECT_URI || `http://localhost:${PORT}/auth/o365/callback`;
+const O365_SCOPES = process.env.O365_SCOPES || 'openid profile email User.Read offline_access';
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  const out = {};
+  if (!header) return out;
+  header.split(';').forEach((pair) => {
+    const idx = pair.indexOf('=');
+    if (idx === -1) return;
+    out[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+  });
+  return out;
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -101,6 +120,64 @@ app.get('/tickets', (req, res) => {
 
 app.get('/pending-tickets', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pending-tickets.html'));
+});
+
+app.get('/tempOAuth', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'temp-oauth.html'));
+});
+
+app.get('/auth/o365/login', (req, res) => {
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie('o365_oauth_state', state, { httpOnly: true, maxAge: 5 * 60 * 1000 });
+  const authorizeUrl = new URL(`https://login.microsoftonline.com/${O365_TENANT_ID}/oauth2/v2.0/authorize`);
+  authorizeUrl.searchParams.set('client_id', O365_CLIENT_ID);
+  authorizeUrl.searchParams.set('response_type', 'code');
+  authorizeUrl.searchParams.set('redirect_uri', O365_REDIRECT_URI);
+  authorizeUrl.searchParams.set('response_mode', 'query');
+  authorizeUrl.searchParams.set('scope', O365_SCOPES);
+  authorizeUrl.searchParams.set('state', state);
+  res.redirect(authorizeUrl.toString());
+});
+
+app.get('/auth/o365/callback', async (req, res) => {
+  const { code, state, error, error_description: errorDescription } = req.query;
+  if (error) {
+    return res.redirect(`/tempOAuth?status=error&message=${encodeURIComponent(errorDescription || error)}`);
+  }
+
+  const cookies = parseCookies(req);
+  res.clearCookie('o365_oauth_state');
+  if (!state || state !== cookies.o365_oauth_state) {
+    return res.redirect(`/tempOAuth?status=error&message=${encodeURIComponent('Invalid or missing state parameter')}`);
+  }
+
+  try {
+    const tokenRes = await fetch(`https://login.microsoftonline.com/${O365_TENANT_ID}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: O365_CLIENT_ID,
+        client_secret: O365_CLIENT_SECRET,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: O365_REDIRECT_URI,
+        scope: O365_SCOPES,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok) {
+      return res.redirect(`/tempOAuth?status=error&message=${encodeURIComponent(tokenData.error_description || 'Token exchange failed')}`);
+    }
+
+    const profileRes = await fetch('https://graph.microsoft.com/v1.0/me', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await profileRes.json();
+    const user = profile.mail || profile.userPrincipalName || profile.displayName || 'unknown';
+    return res.redirect(`/tempOAuth?status=success&user=${encodeURIComponent(user)}`);
+  } catch (err) {
+    return res.redirect(`/tempOAuth?status=error&message=${encodeURIComponent(err.message)}`);
+  }
 });
 
 app.get('/', (req, res) => {
