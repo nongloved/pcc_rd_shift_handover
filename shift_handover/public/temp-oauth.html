@@ -9,18 +9,20 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#FAF5F1; --panel-strong:rgba(255,255,255,.92);
+    --bg:#FAF9F5; --panel-strong:rgba(255,255,255,.92);
     --txt:#292F36; --txt2:#292F36; --txt3:#727477;
-    --signal:#A41F13; --ok:#3A7A50; --bad:#A41F13;
+    --signal:#E85D75; --ok:#2E9B5A; --bad:#E24462;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
     --sans:"IBM Plex Sans Thai",-apple-system,system-ui,sans-serif;
     --glass-bg:rgba(255,255,255,.82);
     --glass-border:rgba(255,255,255,.7);
     --glass-highlight:rgba(255,255,255,.9);
-    --glass-shadow:rgba(41,47,54,.22);
-    --accent-blue:#3B82F6; --accent-blue-dim:rgba(59,130,246,.16);
-    --accent-green:#22C08C; --accent-green-dim:rgba(34,192,140,.16);
-    --bg-glow-1:rgba(59,130,246,.30); --bg-glow-2:rgba(34,192,140,.26); --bg-glow-3:rgba(59,130,246,.16);
+    --glass-shadow:rgba(41,47,54,.18);
+    --m365-pink:#FE7C9D; --m365-orange:#FFA96A; --m365-yellow:#F6F386;
+    --m365-green:#A9F196; --m365-blue:#9CDBFE;
+    --accent-blue:#4FB6E8; --accent-green:#3FBE8A;
+    --accent-green-dim:rgba(169,241,150,.28);
+    --bg-glow-1:rgba(254,124,157,.28); --bg-glow-2:rgba(156,219,254,.32); --bg-glow-3:rgba(169,241,150,.26);
   }
   *{box-sizing:border-box}
   body{
@@ -39,28 +41,28 @@
     box-shadow:inset 0 1px 0 var(--glass-highlight),0 16px 44px var(--glass-shadow);
     overflow:hidden;
   }
-  .box::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
-    background:linear-gradient(90deg,var(--accent-blue),var(--accent-green));opacity:.85}
+  .box::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;
+    background:linear-gradient(90deg,var(--m365-pink),var(--m365-orange),var(--m365-yellow),var(--m365-green),var(--m365-blue));opacity:.95}
   .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;
     text-transform:uppercase;color:var(--txt3);border:1px solid var(--glass-border);
     background:var(--glass-bg);border-radius:5px;padding:3px 8px;margin-bottom:16px}
   h1{font-size:19px;font-weight:700;margin:0 0 6px;color:var(--txt)}
   p.sub{color:var(--txt3);font-size:13px;margin:0 0 26px;line-height:1.6}
   a.btn{
-    display:inline-flex;align-items:center;gap:9px;color:#fff;text-decoration:none;
+    display:inline-flex;align-items:center;gap:9px;color:#292F36;text-decoration:none;
     padding:11px 20px;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;
-    background:linear-gradient(135deg,var(--accent-blue),var(--accent-green));
-    box-shadow:0 6px 18px rgba(59,130,246,.28);transition:transform .15s ease,box-shadow .15s ease;
+    background:linear-gradient(135deg,var(--m365-pink),var(--m365-orange) 35%,var(--m365-yellow) 60%,var(--m365-green) 80%,var(--m365-blue));
+    box-shadow:0 6px 18px rgba(254,124,157,.32);transition:transform .15s ease,box-shadow .15s ease;
   }
-  a.btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(59,130,246,.36)}
+  a.btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(156,219,254,.42)}
   a.btn:active{transform:translateY(0) scale(.98)}
   a.btn svg{width:16px;height:16px;flex-shrink:0}
   .result{
     margin-top:22px;padding:14px 16px;border-radius:12px;font-size:12.5px;
     font-family:var(--mono);word-break:break-all;display:none;
   }
-  .result.success{background:var(--accent-green-dim);border:1px solid rgba(34,192,140,.4);color:var(--ok)}
-  .result.error{background:rgba(164,31,19,.1);border:1px solid rgba(164,31,19,.35);color:var(--bad)}
+  .result.success{background:var(--accent-green-dim);border:1px solid rgba(63,190,138,.4);color:var(--ok)}
+  .result.error{background:rgba(226,68,98,.1);border:1px solid rgba(226,68,98,.35);color:var(--bad)}
 </style>
 </head>
 <body>
@@ -70,10 +72,10 @@
   <p class="sub">Verifies the Microsoft Entra ID (Azure AD) OAuth2 authorization code flow end-to-end.</p>
   <a class="btn" href="/auth/o365/login">
     <svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="9" height="9" fill="#fff"/>
-      <rect x="11" y="1" width="9" height="9" fill="#fff" fill-opacity=".7"/>
-      <rect x="1" y="11" width="9" height="9" fill="#fff" fill-opacity=".7"/>
-      <rect x="11" y="11" width="9" height="9" fill="#fff" fill-opacity=".9"/>
+      <rect x="1" y="1" width="9" height="9" fill="#292F36"/>
+      <rect x="11" y="1" width="9" height="9" fill="#292F36" fill-opacity=".75"/>
+      <rect x="1" y="11" width="9" height="9" fill="#292F36" fill-opacity=".75"/>
+      <rect x="11" y="11" width="9" height="9" fill="#292F36" fill-opacity=".9"/>
     </svg>
     Sign in with Microsoft
   </a>
