@@ -71,11 +71,11 @@ pm_tickets_today_collection = db['ma_tickets_today']
 pm_tickets_history_collection = db['ma_tickets']
 
 
-def _is_reported_today(report_date):
-    if not report_date:
+def _is_bangkok_date_today(iso_date):
+    if not iso_date:
         return False
     try:
-        dt = datetime.fromisoformat(str(report_date).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(iso_date).replace("Z", "+00:00"))
     except ValueError:
         return False
     if dt.tzinfo is None:
@@ -228,7 +228,10 @@ def _sync_ticket_collection(collection, label, tickets, prune=True):
 
 
 def _is_pm_today(ticket):
-    return ticket.get("request_type") == "Preventive Maintenance Plan" and _is_reported_today(ticket.get("report_date"))
+    # "Today" for a PM ticket means its scheduled maintenance window (due_date), not
+    # when the ticket was opened in Helpdesk (report_date) — PM tickets are routinely
+    # filed days ahead of the actual site visit.
+    return ticket.get("request_type") == "Preventive Maintenance Plan" and _is_bangkok_date_today(ticket.get("due_date"))
 
 
 def poll_new_tickets():
