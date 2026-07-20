@@ -1,6 +1,6 @@
 /* ---------- RESET + BASE LAYOUT ---------- */
 *{box-sizing:border-box;margin:0;padding:0}
-.wrap{max-width:1400px;margin:0 auto;padding:18px 20px 60px}
+.wrap{max-width:100%;margin:0 ;padding:18px 20px 60px}
 
 /* ---------- PAGE HEADER + BACK BUTTON ---------- */
 header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
@@ -56,7 +56,7 @@ header .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top
 .export-menu-label:first-child{border-top:none;padding-top:9px}
 
 /* ---------- CARD + TABLE (โครงตารางพื้นฐาน) ---------- */
-.card{background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;
+.card{width:100%;max-width:100%;box-sizing:border-box;background:var(--glass-bg-strong);border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;
     backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
     box-shadow:inset 0 1px 0 var(--glass-highlight),0 6px 22px var(--glass-shadow)}
 .tbl-wrap{overflow-x:auto}
