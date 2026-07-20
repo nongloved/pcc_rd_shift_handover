@@ -151,6 +151,17 @@
   .kpi:nth-child(3){animation-delay:.08s} .kpi:nth-child(4){animation-delay:.11s}
   .kpi:nth-child(5){animation-delay:.14s}
 
+  /* ---------- FOOTER ---------- */
+  footer{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;
+    margin-top:24px;padding:14px 18px;text-align:center;
+    background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;
+    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:inset 0 1px 0 var(--glass-highlight),0 6px 22px var(--glass-shadow);
+    font-family:var(--mono);font-size:11px;color:var(--txt3);letter-spacing:.3px;
+  }
+  footer strong{color:var(--txt2);font-weight:600}
+
   /* ---------- GRID ---------- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:start;width:100%;max-width:100%;box-sizing:border-box}
   .col{display:flex;flex-direction:column;gap:16px;min-width:0;width:100%;max-width:100%;box-sizing:border-box}
@@ -202,9 +213,13 @@
   .ticket .meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:11.5px;color:var(--txt2)}
   .ticket .meta b{color:var(--txt);font-weight:700}
   .ticket .meta .mono{font-family:var(--mono)}
-  .ticket .act{font-size:12.5px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px}
-  .ticket .act .lbl{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+  .ticket .act{font-size:12.5px;color:var(--txt2);border-top:1px dashed var(--line);padding-top:7px;
+    display:flex;align-items:baseline;gap:4px;min-width:0}
+  .ticket .act .lbl{color:var(--txt3);font-weight:500;font-family:var(--mono);font-size:10px;letter-spacing:.5px;flex-shrink:0}
   .ticket .act b{color:var(--txt);font-weight:700}
+  .ticket .act .act-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+  .ticket .act .more{display:none;flex-shrink:0}
+  .ticket .act.trunc .more{display:inline}
   .sla{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;
     display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px}
   .sla.ok{background:#d1fae5;color:#3D7A5C}
@@ -592,6 +607,10 @@
     </div>
   </div>
 
+  <footer>
+    <span>&copy; <span id="footerYear"></span> <strong>Network Operation Center</strong> — PCC RD Shift Handover</span>
+  </footer>
+
 </div>
 
 <div class="popup-overlay" id="notePopup">
@@ -796,7 +815,6 @@
     var ts=filtered.slice().sort(function(a,b){return ticketNum(b.id)-ticketNum(a.id);});
     el.innerHTML=ts.map(function(t){
       var s=slaInfo(t.due);
-      var note=truncateText(t.note,68);
       var upd=formatUpdatedAt(t.lastUpdated||t.reportDate);
       return '<div class="ticket" data-id="'+t.id+'">'
         +'<div class="top">'
@@ -809,9 +827,22 @@
         +'<div class="title">'+esc(t.title)+'</div>'
         +'<div class="meta"><span>ประเภทงาน <b class="mono">'+esc(t.reqtype)+'</b></span><span>Site <b>'+esc(t.site)+'</b></span>'
           +(upd?'<span class="pill upd">🕓 '+esc(upd)+'</span>':'')+'</div>'
-        +'<div class="act"><span class="lbl">หมายเหตุ · </span><b>'+esc(note.text)+'</b>'+(note.trunc?' <span class="more" data-more="note">...more</span>':'')+'</div>'
+        +'<div class="act"><span class="lbl">หมายเหตุ · </span><span class="act-text"><b>'+esc(t.note||"—")+'</b></span>'
+          +' <span class="more" data-more="note">...more</span></div>'
       +'</div>';
     }).join("");
+    markTruncatedNotes(el);
+  }
+
+  // shows "...more" only when the note actually overflows the card's width
+  function markTruncatedNotes(container){
+    requestAnimationFrame(function(){
+      container.querySelectorAll(".act").forEach(function(actEl){
+        var txt=actEl.querySelector(".act-text");
+        if(!txt)return;
+        actEl.classList.toggle("trunc",txt.scrollWidth>txt.clientWidth+1);
+      });
+    });
   }
 
   /* ---------- live Helpdesk -> pending tickets card ---------- */
@@ -1238,6 +1269,7 @@
     var d=new Date();
     document.getElementById("clkT").textContent=d.toLocaleTimeString("th-TH",{hour12:false});
     document.getElementById("clkD").textContent=d.toLocaleDateString("th-TH",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+    document.getElementById("footerYear").textContent=d.getFullYear();
   }
   setInterval(tick,1000); tick();
   setInterval(renderKPIs,30000); // refresh SLA chips
