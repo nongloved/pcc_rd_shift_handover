@@ -151,6 +151,20 @@ def extract_circuit_id(detail):
     return matches[0][1]
 
 
+# "ประเภทของงาน" — a WebHelpDesk custom dropdown field (definitionId 123 on this
+# instance), values like "งาน UIH" / "งาน MA" / "งาน NOC" / "งานโครงการ Wifi" etc.
+# Not exposed as its own top-level ticket property, only inside ticketCustomFields.
+WORK_TYPE_FIELD_DEFINITION_ID = 123
+
+
+def extract_work_type(raw):
+    for field in raw.get('ticketCustomFields') or []:
+        if field.get('definitionId') == WORK_TYPE_FIELD_DEFINITION_ID:
+            value = field.get('restValue')
+            return value if value and not value.startswith('---') else None
+    return None
+
+
 def extract_ticket_fields(raw):
     notes = raw.get('notes') or []
     location = raw.get('location') or {}
@@ -163,6 +177,7 @@ def extract_ticket_fields(raw):
         "circuit_id": extract_circuit_id(detail),
         "subject": raw.get('subject'),
         "request_type": problemtype.get('detailDisplayName'),
+        "work_type": extract_work_type(raw),
         "status": statustype.get('statusTypeName'),
         "priority": prioritytype.get('priorityTypeName'),
         "location": location.get('locationName'),
@@ -238,12 +253,13 @@ def poll_new_tickets():
     group_tickets, active_statuses = fetch_group_tickets()
     tracked = [extract_ticket_fields(raw) for raw in group_tickets if is_tracked_status(raw, active_statuses)]
 
-  
+    # noc_tickets mirrors every tracked ticket (no carve-out for today's PM-Plan
+    # tickets) so "Ticket ค้าง ต้องดำเนินการต่อ" shows the complete set — overlapping
+    # with "PM Tickets วันนี้" is expected, not a bug to avoid.
     pm_today = [t for t in tracked if _is_pm_today(t)]
-    noc_only = [t for t in tracked if not _is_pm_today(t)]
     pm_all = [t for t in tracked if t.get("request_type") == "Preventive Maintenance Plan"]
 
-    noc_result = _sync_ticket_collection(tickets_collection, "noc_tickets", noc_only)
+    noc_result = _sync_ticket_collection(tickets_collection, "noc_tickets", tracked)
     pm_result = _sync_ticket_collection(pm_tickets_today_collection, "ma_tickets_today", pm_today)
     history_result = _sync_ticket_collection(
         pm_tickets_history_collection, "ma_tickets", pm_all, prune=False

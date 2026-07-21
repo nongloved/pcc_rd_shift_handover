@@ -57,6 +57,9 @@
   tr.row-today:hover td{background:rgba(164,31,19,.12)}
 
   .mono{font-family:var(--mono)}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.4px;
+    border-radius:5px;padding:2px 7px;white-space:nowrap;display:inline-block}
+  .work-type{background:#f3e8ff;color:#6b21a8;box-shadow:inset 0 0 0 1px #d8b4fe}
 
   tr.row-done td{opacity:.45;text-decoration:line-through;text-decoration-color:var(--txt3)}
   tbody tr{cursor:pointer}
@@ -147,7 +150,6 @@
 
   var esc = NOC.esc;
   var formatDate = NOC.formatDate;
-
   var todayStr=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Bangkok"});
 
   function render(records){
@@ -164,7 +166,7 @@
       return '<tr class="row-entering'+rowBase+'" data-tid="'+t._id+'" style="animation-delay:'+(i*35)+'ms">'
         +'<td class="num">'+(i+1)+'</td>'
         +'<td class="mono">'+esc(t.ticket_id!=null?t.ticket_id:"—")+'</td>'
-        +'<td>'+esc(t.subject||"—")+'</td>'
+        +'<td><span class="pill work-type">'+esc(t.work_type||"—")+'</span> '+esc(t.subject||"—")+'</td>'
         +'<td>'+esc(t.location||"—")+'</td>'
         +'<td>'+esc(t.room||"—")+'</td>'
         +'<td>'+esc(t.note||"—")+'</td>'
@@ -197,6 +199,7 @@
       ["SolarWinds No.", t.circuit_id||"—"],
       ["Subject", t.subject||"—"],
       ["Request Type", t.request_type||"—"],
+      ["ประเภทของงาน", t.work_type||"—"],
       ["Priority", t.priority||"—"],
       ["Status", t.status||"—"],
       ["Location", t.location||"—"],
@@ -261,11 +264,13 @@
     document.getElementById("capoLoader").style.display="flex";
     var delay=new Promise(function(r){setTimeout(r,1000);});
     try{
-      var res=await fetch("/api/ma-tickets");
+      var res=await fetch("/api/ma-tickets-history");
       if(!res.ok)throw new Error("HTTP "+res.status);
       var raw=await res.json();
       all=raw.filter(function(t){
-        return t.request_type==="Preventive Maintenance Plan" && t.status!=="Closed" && t.status!=="Resolved";
+        return t.status!=="Closed" && t.status!=="Resolved";
+      }).map(function(t){
+        return Object.assign({}, t, {note: NOC.cleanNote(t.note)});
       });
       document.getElementById("metaLine").textContent=
         "Last loaded: "+new Date().toLocaleTimeString("en-GB")+" · "+all.length+" total tickets";

@@ -57,6 +57,19 @@
     return m[p]||"Medium";
   }
 
+  // Helpdesk note text often carries raw HTML (<br>, <b>, <a>) from WebHelpDesk.
+  // Keep <br> as a line break for readability, strip every other tag rather than
+  // rendering it — this is unsanitized third-party text, not markup we trust.
+  function cleanNote(s){
+    if(s==null)return"";
+    return String(s)
+      .replace(/<br\s*\/?>/gi,"\n")
+      .replace(/<[^>]+>/g,"")
+      .replace(/&nbsp;/gi," ")
+      .replace(/[ \t]+\n/g,"\n")
+      .trim();
+  }
+
   /* ---------- export เป็น CSV / ไฟล์ดาวน์โหลด ---------- */
 
   function csvEscape(v){
@@ -121,6 +134,7 @@
     formatDowntime: formatDowntime,
     extractLocation: extractLocation,
     mapPriority: mapPriority,
+    cleanNote: cleanNote,
     csvEscape: csvEscape,
     downloadBlob: downloadBlob,
     setupExportMenu: setupExportMenu,

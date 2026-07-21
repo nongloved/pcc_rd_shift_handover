@@ -43,15 +43,16 @@
 
   .toolbar select{font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line2);border-radius:7px;color:var(--txt);padding:8px 10px;outline:none;cursor:pointer;max-width:200px}
 
-  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:1020px}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:1100px}
   col.c-num     {width:32px}
   col.c-ticket  {width:8%}
+  col.c-worktype{width:9%}
   col.c-pri     {width:7%}
   col.c-status  {width:10%}
-  col.c-subject {width:20%}
-  col.c-reqtype {width:14%}
-  col.c-site    {width:12%}
-  col.c-note    {width:17%}
+  col.c-subject {width:18%}
+  col.c-reqtype {width:13%}
+  col.c-site    {width:11%}
+  col.c-note    {width:16%}
   col.c-due     {width:8%}
 
   .mono{font-family:var(--mono)}
@@ -64,6 +65,7 @@
   .pri-Medium{background:#fef9d8;color:var(--p3);box-shadow:inset 0 0 0 1px #e8d060}
   .pri-Low{background:#e8eef5;color:#5b7290;box-shadow:inset 0 0 0 1px #5B88B2}
   .pri-Scheduled{background:#ece8f5;color:#6b5b9a;box-shadow:inset 0 0 0 1px #b8a8e0}
+  .work-type{background:#f3e8ff;color:#6b21a8;box-shadow:inset 0 0 0 1px #d8b4fe}
   .status{background:#eef2e0;color:#4B5A2A;box-shadow:inset 0 0 0 1px #C3D08A}
 
   /* ---- detail popup ---- */
@@ -92,6 +94,9 @@
         <input id="search" placeholder="Search ticket no, subject, site…" oninput="applyFilter()">
         <select id="reqTypeFilter" onchange="applyFilter()">
           <option value="">All request types</option>
+        </select>
+        <select id="workTypeFilter" onchange="applyFilter()">
+          <option value="">All work types</option>
         </select>
         <select id="priFilter" onchange="applyFilter()">
           <option value="">All priorities</option>
@@ -125,17 +130,17 @@
     <div class="tbl-wrap">
       <table>
         <colgroup>
-          <col class="c-num"><col class="c-ticket"><col class="c-pri"><col class="c-status">
+          <col class="c-num"><col class="c-ticket"><col class="c-worktype"><col class="c-pri"><col class="c-status">
           <col class="c-subject"><col class="c-reqtype"><col class="c-site"><col class="c-note"><col class="c-due">
         </colgroup>
         <thead>
           <tr>
-            <th>#</th><th>Ticket No.</th><th>Priority</th><th>Status</th>
+            <th>#</th><th>Ticket No.</th><th>Work Type</th><th>Priority</th><th>Status</th>
             <th>Subject</th><th>Request Type</th><th>Site</th><th>Note</th><th>Due Date</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="9" class="empty">Loading…</td></tr>
+          <tr><td colspan="10" class="empty">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -182,13 +187,20 @@
     statusSel.innerHTML='<option value="">All statuses ('+all.length+')</option>'+statuses.map(function(s){
       return '<option value="'+esc(s)+'"'+(s===curStatus?' selected':'')+'>'+esc(s)+' ('+counts[s]+')</option>';
     }).join("");
+
+    var workTypeSel=document.getElementById("workTypeFilter");
+    var curWorkType=workTypeSel.value;
+    var workTypes=Array.from(new Set(all.map(function(t){return t.work_type;}).filter(Boolean))).sort();
+    workTypeSel.innerHTML='<option value="">All work types</option>'+workTypes.map(function(wt){
+      return '<option value="'+esc(wt)+'"'+(wt===curWorkType?' selected':'')+'>'+esc(wt)+'</option>';
+    }).join("");
   }
 
   function render(records){
     var tb=document.getElementById("tbody");
     document.getElementById("countLabel").textContent=records.length+" / "+all.length+" tickets";
     if(!records.length){
-      tb.innerHTML='<tr><td colspan="9" class="empty">No tickets found.</td></tr>';
+      tb.innerHTML='<tr><td colspan="10" class="empty">No tickets found.</td></tr>';
       return;
     }
     var rows=records.map(function(t,i){
@@ -196,6 +208,7 @@
       return '<tr class="row-entering" data-tid="'+t._id+'" style="animation-delay:'+(i*35)+'ms">'
         +'<td class="num">'+(i+1)+'</td>'
         +'<td class="mono">'+esc(t.ticket_id!=null?t.ticket_id:"—")+'</td>'
+        +'<td><span class="pill work-type">'+esc(t.work_type||"—")+'</span></td>'
         +'<td><span class="pill pri-'+pri+'">'+pri+'</span></td>'
         +'<td><span class="pill status">'+esc(t.status||"—")+'</span></td>'
         +'<td>'+esc(t.subject||"—")+'</td>'
@@ -209,17 +222,19 @@
   }
 
   function ticketText(t){
-    var parts=[t.ticket_id,t.circuit_id,t.subject,t.request_type,t.status,t.location,t.room,t.note,t.due_date,t.detail];
+    var parts=[t.ticket_id,t.circuit_id,t.subject,t.request_type,t.work_type,t.status,t.location,t.room,t.note,t.due_date,t.detail];
     return parts.filter(Boolean).join(" ").toLowerCase();
   }
 
   function applyFilter(){
     var q=document.getElementById("search").value.toLowerCase().trim();
     var rt=document.getElementById("reqTypeFilter").value;
+    var wt=document.getElementById("workTypeFilter").value;
     var pf=document.getElementById("priFilter").value;
     var sf=document.getElementById("statusFilter").value;
     var filtered=all.filter(function(t){
       if(rt && t.request_type!==rt)return false;
+      if(wt && t.work_type!==wt)return false;
       if(pf && mapPriority(t.priority)!==pf)return false;
       if(sf && t.status!==sf)return false;
       if(q&&ticketText(t).indexOf(q)<0)return false;
@@ -233,6 +248,7 @@
   function openDetailPopup(t){
     var fields=[
       ["Ticket No.", t.ticket_id!=null?t.ticket_id:"—"],
+      ["ประเภทของงาน", t.work_type||"—"],
       ["Priority", mapPriority(t.priority)],
       ["Status", t.status||"—"],
       ["Subject", t.subject||"—"],
@@ -271,10 +287,10 @@
   var csvEscape = NOC.csvEscape;
   var downloadBlob = NOC.downloadBlob;
   function toCSV(records){
-    var headers=["Ticket No.","Priority","Status","Subject","Request Type","Site","Note","Due Date"];
+    var headers=["Ticket No.","Work Type","Priority","Status","Subject","Request Type","Site","Note","Due Date"];
     var lines=[headers.join(",")];
     records.forEach(function(t){
-      var row=[t.ticket_id,mapPriority(t.priority),t.status,t.subject,t.request_type,siteOf(t),t.note,t.due_date];
+      var row=[t.ticket_id,t.work_type,mapPriority(t.priority),t.status,t.subject,t.request_type,siteOf(t),t.note,t.due_date];
       lines.push(row.map(csvEscape).join(","));
     });
     return lines.join("\r\n");
@@ -302,7 +318,10 @@
     try{
       var res=await fetch("/api/ma-tickets");
       if(!res.ok)throw new Error("HTTP "+res.status);
-      all=await res.json();
+      var raw=await res.json();
+      all=raw.map(function(t){
+        return Object.assign({}, t, {note: NOC.cleanNote(t.note)});
+      });
       populateFilterOptions();
       document.getElementById("metaLine").textContent=
         "Last loaded: "+new Date().toLocaleTimeString("en-GB")+" · "+all.length+" total tickets";
@@ -311,7 +330,7 @@
     }catch(e){
       await delay;
       document.getElementById("tbody").innerHTML=
-        '<tr><td colspan="9" class="empty" style="color:var(--bad)">Cannot reach ticket API: '+esc(e.message)+'</td></tr>';
+        '<tr><td colspan="10" class="empty" style="color:var(--bad)">Cannot reach ticket API: '+esc(e.message)+'</td></tr>';
       document.getElementById("metaLine").textContent="Error loading data";
     }
     document.getElementById("capoLoader").style.display="none";
