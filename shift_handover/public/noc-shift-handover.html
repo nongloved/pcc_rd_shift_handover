@@ -299,17 +299,17 @@
   .uih-body-scroll::-webkit-scrollbar-track{background:var(--bg2)}
   .uih-body-scroll::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent-blue),var(--accent-green));border-radius:3px}
 
-  .uih-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:860px}
-  .uih-table col.c-num{width:32px}
-  .uih-table col.c-purpose{width:17%}
-  .uih-table col.c-area{width:11%}
-  .uih-table col.c-impacted{width:18%}
-  .uih-table col.c-start{width:11%}
-  .uih-table col.c-end{width:11%}
-  .uih-table col.c-down{width:7%}
-  .uih-table col.c-circ{width:6%}
-  .uih-table col.c-done{width:6%}
-  .uih-table th{background:color-mix(in srgb, var(--accent-blue-dim) 50%, var(--accent-green-dim) 50%);backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:nowrap}
+  .uih-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:698px}
+  .uih-table col.c-num{width:30px}
+  .uih-table col.c-purpose{width:86px}
+  .uih-table col.c-area{width:62px}
+  .uih-table col.c-impacted{width:74px}
+  .uih-table col.c-start{width:118px}
+  .uih-table col.c-end{width:118px}
+  .uih-table col.c-down{width:92px}
+  .uih-table col.c-circ{width:50px}
+  .uih-table col.c-done{width:68px}
+  .uih-table th{background:color-mix(in srgb, var(--accent-blue-dim) 50%, var(--accent-green-dim) 50%);backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:normal;line-height:1.3}
   .uih-table td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;transition:background-color .15s ease}
   .uih-table tr:last-child td{border-bottom:none}
   .uih-table tbody tr{cursor:pointer}
@@ -328,7 +328,7 @@
   .uih-table tr.row-hiding td{animation:row-out .35s ease-out forwards;pointer-events:none}
   @keyframes row-in{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
   .uih-table tr.row-entering{animation:row-in .3s ease-out both}
-  .all-th{background:color-mix(in srgb, var(--accent-blue-dim) 50%, var(--accent-green-dim) 50%);backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:nowrap;position:sticky;top:0;z-index:1}
+  .all-th{background:color-mix(in srgb, var(--accent-blue-dim) 50%, var(--accent-green-dim) 50%);backdrop-filter:blur(10px);color:var(--txt3);font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--glass-border);white-space:normal;line-height:1.3;position:sticky;top:0;z-index:1}
   #ticketsCard tbody tr{height:42px}
   #ticketsCard td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background-color .15s ease}
   #ticketsCard td.note-cell{white-space:normal}
@@ -544,7 +544,7 @@
       <div class="kpis" id="kpisPm" style="grid-template-columns:repeat(2,1fr);margin-top:0"></div>
       <div class="card" id="pmCard">
         <div class="head">
-          <div class="ttl"><span class="dot" style="background:var(--signal)"></span> ใบแจ้งงาน RD วันนี้</div>
+          <div class="ttl"><span class="dot" style="background:var(--signal)"></span> PM UIH วันนี้</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="count" id="pmCount">0</span>
             <a href="/records" id="moreRecordsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
@@ -561,8 +561,8 @@
             <thead>
               <tr>
                 <th>Done</th><th>#</th><th>Purpose</th><th>Location</th>
-                <th>Impacted Location</th><th>Start Time</th>
-                <th>Completion Time</th>
+                <th>Impacted</th><th>Start</th>
+                <th>End</th>
                 <th>Downtime</th>
                 <th>Cir.</th>
               </tr>
@@ -577,7 +577,7 @@
   <!-- ALL TICKETS CARD -->
   <div class="card" id="ticketsCard" style="margin-top:18px">
     <div class="head">
-      <div class="ttl"><span class="dot" style="background:var(--night)"></span> PM Tickets วันนี้</div>
+      <div class="ttl"><span class="dot" style="background:var(--night)"></span> PM MA วันนี้</div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="count" id="ticketsCount">0</span>
         <a href="/tickets" id="moreTicketsBtn" class="btn-sm" style="padding:3px 9px;font-size:11px;text-decoration:none">More →</a>
@@ -590,10 +590,10 @@
                color:var(--txt);font-family:var(--sans);font-size:12px;padding:6px 10px;outline:none">
     </div>
     <div class="pm-body-scroll" style="overflow-x:auto;overflow-y:auto;height:238px;scrollbar-gutter:stable">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:900px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:690px">
         <colgroup>
-          <col style="width:30px"><col style="width:9%"><col style="width:19%">
-          <col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:17%"><col style="width:10%">
+          <col style="width:32px"><col style="width:88px"><col style="width:118px">
+          <col style="width:76px"><col style="width:86px"><col style="width:104px"><col style="width:90px"><col style="width:96px">
         </colgroup>
         <thead><tr>
           <th class="all-th">#</th><th class="all-th">Ticket No.</th><th class="all-th">Subject</th>
@@ -915,7 +915,7 @@
     var doneCount=uihRecords.filter(function(r){return r.done;}).length;
     document.getElementById("pmCount").textContent=visible.length+"/"+total+(doneCount?" ("+doneCount+" done)":"");
     if(!visible.length){
-      tb.innerHTML='<tr><td colspan="9" class="empty" style="padding:24px">— ไม่มีใบแจ้งงาน RD วันนี้ —</td></tr>';
+      tb.innerHTML='<tr><td colspan="9" class="empty" style="padding:24px">— ไม่มี PM UIH วันนี้ —</td></tr>';
       return;
     }
     tb.innerHTML=visible.map(function(r,i){
@@ -1132,8 +1132,8 @@
       +"<div class=\"row\"><span>ผู้รับมอบงาน (To)</span><b>"+esc(ackInfo.toName)+" &lt;"+esc(ackInfo.toEmail)+"&gt;</b></div>"
       +"</div>"
       +"<div class=\"block\"><h2>งานค้าง ณ เวลาส่งมอบ (Outstanding items at handover)</h2>"
-      +"<div class=\"row\"><span>ใบแจ้งงาน RD วันนี้</span><b>"+uihUndone+" / "+uihTotal+" ค้าง</b></div>"
-      +"<div class=\"row\"><span>PM Tickets วันนี้ (MA)</span><b>"+pmUndone+" / "+pmTotal+" ค้าง</b></div>"
+      +"<div class=\"row\"><span>PM UIH วันนี้</span><b>"+uihUndone+" / "+uihTotal+" ค้าง</b></div>"
+      +"<div class=\"row\"><span>PM MA วันนี้</span><b>"+pmUndone+" / "+pmTotal+" ค้าง</b></div>"
       +"<div class=\"row\"><span>Ticket ค้าง ต้องดำเนินการต่อ</span><b>"+ticketUndone+" รายการ</b></div>"
       +"</div>"
       +"</body></html>";
@@ -1279,7 +1279,7 @@
   setInterval(tick,1000); tick();
   setInterval(renderKPIs,30000); // refresh SLA chips
 
-  /* ---------- PM Tickets วันนี้ (today's PM-plan tickets from MA/Helpdesk) ---------- */
+  /* ---------- PM MA วันนี้ (today's PM-plan tickets from MA/Helpdesk) ---------- */
   var pmTicketsToday=[];
 
   function ticketText(t){
@@ -1316,7 +1316,7 @@
         +'<td>'+esc(t.room||"—")+'</td>'
         +'<td style="font-size:11px">'+esc(t.status||"—")+'</td>'
         +'<td class="note-cell">'+esc(note.text)+(note.trunc?' <span class="more">...more</span>':'')+'</td>'
-        +'<td style="font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)">'+esc(t.due_date||"—")+'</td>'
+        +'<td style="font-family:var(--mono);font-size:11px;white-space:nowrap;color:var(--txt2)">'+esc(NOC.formatDate(t.due_date))+'</td>'
       +'</tr>';
     });
     tb.innerHTML=rows.join("");
